@@ -1,0 +1,23 @@
+# Local dependencies and build output
+node_modules/
+coverage/
+dist/
+*.zip
+*.log
+
+# Local settings / credentials
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# OS files and downloaded teaching materials
+Thumbs.db
+.DS_Store
+Downloads/
+downloads/
+materials/
+
+# Empty nested repository created during Desktop setup
+/webclass-library-manager/

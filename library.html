@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>資料ライブラリ · WebClass</title><link rel="stylesheet" href="library.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="library.html"><span class="brand-mark">W</span><span>WebClass</span></a><div class="search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.2 16.2 4.2 4.2"></path></svg><input id="search" type="search" aria-label="ファイル名・講義名を検索" placeholder="ファイル名・講義名を検索"></div></header>
+<div class="workspace">
+<aside class="sidebar"><p class="section-label">ライブラリ</p><button id="home" class="nav active"><span aria-hidden="true">▦</span>フォルダ</button><button id="all" class="nav"><span aria-hidden="true">≡</span>すべての資料</button><button id="favorites" class="nav"><span aria-hidden="true">☆</span>お気に入り</button><div class="side-divider"></div><p class="section-label">講義・フォルダ</p><nav id="tree" aria-label="フォルダ一覧"></nav><button id="sidebar-settings" class="nav sidebar-settings" aria-pressed="false"><span aria-hidden="true">⚙</span>設定</button></aside>
+<main class="browser"><div class="page-heading"><h1 id="heading">資料ライブラリ</h1><button id="refresh" class="quiet">↻ 更新</button></div><nav id="breadcrumbs" aria-label="現在のフォルダ"></nav><div class="toolbar"><div class="type-filter"><div class="filter-label"><span id="type-label">種類</span><span id="filter-summary" role="status" aria-live="polite">すべての種類</span></div><div class="filter-controls"><div id="type-filters" role="group" aria-labelledby="type-label"></div><button id="clear-types" type="button" disabled>すべて解除</button></div></div><div class="display-controls"><label>並び順<select id="sort"><option value="modified">更新が新しい順</option><option value="name">名前順</option><option value="size">サイズが大きい順</option></select></label><div class="view-buttons" role="group" aria-label="表示方法"><button id="grid" aria-label="グリッド表示" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/></svg></button><button id="list" aria-label="一覧表示" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h12M4 10h12M4 15h12"/></svg></button></div></div></div><p id="status" role="status" aria-live="polite"></p><div id="permission" hidden><p>保存先へのアクセスを許可すると資料を表示できます。</p><button id="grant">アクセスを許可</button></div><div id="entries" class="entries grid" aria-label="ファイルとフォルダ"></div><div id="empty" class="empty" hidden><h2 id="empty-title">保存先を選んでください</h2><p id="empty-message">保存先のファイルを表示します。</p></div><footer><span id="count">0個の項目</span></footer></main>
+<aside class="details" aria-label="ファイルの詳細"><div class="details-header"><h2>詳細</h2><button id="close-details" class="quiet" aria-label="詳細を閉じる" hidden>×</button></div><div id="detail-empty"><p>ファイルを選択してください</p></div><section id="detail-content" hidden><span id="detail-type" class="type-pill"></span><h3 id="detail-name"></h3><div id="detail-preview" aria-label="先頭ページのプレビュー" hidden></div><dl><dt>フォルダ</dt><dd id="detail-path"></dd><dt>サイズ</dt><dd id="detail-size"></dd><dt>更新日時</dt><dd id="detail-date"></dd></dl><button id="open-file" class="primary">Chromeで開く</button><button id="open-folder" class="quiet">保存フォルダへ移動</button><button id="favorite" class="quiet">☆ お気に入りに追加</button><p id="metadata-status" role="status"></p></section></aside>
+<main id="settings-page" class="settings-page" hidden>
+  <div class="settings-title"><span aria-hidden="true">⚙</span><h1>設定</h1></div>
+  <form id="library-settings-form">
+    <section class="settings-section" aria-labelledby="general-title">
+      <h2 id="general-title"><span aria-hidden="true">⌘</span>一般</h2>
+      <div class="setting-row">
+        <div><h3>データの保存場所</h3><p id="settings-folder-state">保存先を確認しています…</p><p class="setting-help">選んだフォルダー内に講義別フォルダーを作成します。</p></div>
+        <div class="setting-actions"><button id="settings-choose-folder" class="quiet" type="button">変更</button><button id="settings-use-browser" class="quiet" type="button">ブラウザの保存先を使用</button></div>
+      </div>
+      <p id="settings-folder-status" class="setting-message" role="status"></p>
+      <div class="setting-row">
+        <div><h3>自動整理</h3><p class="setting-help">WebClassから保存する資料を講義ごとに整理します。</p></div>
+        <label class="switch"><input id="settings-enabled" type="checkbox"><span aria-hidden="true"></span><span class="switch-text">有効</span></label>
+      </div>
+      <div class="setting-row setting-url-row">
+        <div><label for="settings-site"><h3>WebClassのベースURL</h3></label><p class="setting-help">大学のWebClass全体に共通するURLを指定します。</p></div>
+        <input id="settings-site" type="url" required placeholder="https://webclass.example.ac.jp/webclass/">
+      </div>
+      <div class="settings-submit"><button class="primary" type="submit">設定を保存</button></div><p id="settings-status" class="setting-message" role="status"></p>
+    </section>
+  </form>
+  <section class="settings-section" aria-labelledby="display-title">
+    <h2 id="display-title"><span aria-hidden="true">◐</span>表示</h2>
+    <div class="setting-row">
+      <div><h3 id="course-names-label">授業名を目立たせる</h3><p class="setting-help">末尾の曜日・担当者・開講時期・コードを薄いグレーで表示します。授業名に含まれる「(2a)」などはそのまま表示します。変更はすぐに反映されます。</p></div>
+      <label class="switch"><input id="settings-course-names" type="checkbox" checked aria-labelledby="course-names-label"><span aria-hidden="true"></span><span class="switch-text">有効</span></label>
+    </div>
+    <p id="settings-display-status" class="setting-message" role="status"></p>
+  </section>
+</main>
+</div>
+<script type="module" src="library.js"></script>
+</body></html>

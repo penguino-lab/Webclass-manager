@@ -17,7 +17,8 @@ for (const dir of ['icons', 'images']) await cp(join(source, dir), join(extensio
 let context;
 try {
   context = await chromium.launchPersistentContext(join(run, 'profile'), {
-    executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH, headless: true, viewport: { width: 1440, height: 1000 },
+    ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : { channel: 'chromium' }),
+    headless: true, viewport: { width: 1440, height: 1000 },
     ignoreDefaultArgs: ['--disable-extensions', '--disable-component-extensions-with-background-pages'], args: [`--load-extension=${extension}`]
   });
   context.setDefaultTimeout(10000);

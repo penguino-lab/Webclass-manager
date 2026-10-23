@@ -69,6 +69,8 @@ node tests/library-first-run-browser.mjs
 
 `library-first-run-browser.mjs` は、初期画面からのフォルダー選択・キャンセル・拒否、空フォルダー、標準の読み込み範囲、深いフォルダーを読む設定と再読み込み、更新バナー・キャッシュ・案内を閉じる操作・手動確認・ヘッダーの高さ・狭い画面の配置を検証します。通常は更新情報をテスト用の応答に置き換えます。`CHECK_LIVE_UPDATE=1` を指定した場合のみ、実際の公開GitHubへ更新確認を1回行います。
 
+公開用のGitHub Actionsでも、この初回ライブラリ検証をChromiumで実行し、ダミー画面のスクリーンショットを7日間保存します。
+
 既存のPlaywrightやChromiumを使う場合は `PLAYWRIGHT_MODULE_PATH` と `PLAYWRIGHT_EXECUTABLE_PATH` を指定できます。出力はリポジトリに隣接する `tmp/` 以下です。
 
 テストは普段のブラウザと別のプロファイルで、ダミー資料とダミーサイトを使います。フォルダー選択はテスト用のハンドルで代用しているため、Windowsの実フォルダーピッカー・大学の認証・ネイティブの権限承認は別途手動で確認してください。

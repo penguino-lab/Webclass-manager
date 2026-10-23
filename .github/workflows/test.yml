@@ -28,10 +28,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test library first run and update notices
         run: node tests/library-first-run-browser.mjs
+        env:
+          LIBRARY_TEST_OUTPUT: ${{ runner.temp }}/webclass-library-first-run
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: library-first-run-screenshots
-          path: ../tmp/webclass-library-first-run/run-*/*.png
+          path: ${{ runner.temp }}/webclass-library-first-run/run-*/*.png
           if-no-files-found: ignore
           retention-days: 7

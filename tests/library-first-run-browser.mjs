@@ -6,7 +6,7 @@ import { resolve, join } from 'node:path';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
 const source = resolve(import.meta.dirname, '..');
-const output = resolve(source, '..', 'tmp', 'webclass-library-first-run');
+const output = process.env.LIBRARY_TEST_OUTPUT ? resolve(process.env.LIBRARY_TEST_OUTPUT) : resolve(source, '..', 'tmp', 'webclass-library-first-run');
 await mkdir(output, { recursive: true });
 const run = await mkdtemp(join(output, 'run-')), extension = join(run, 'extension');
 await mkdir(extension);

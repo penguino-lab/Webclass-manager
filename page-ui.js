@@ -68,6 +68,42 @@
   const inactiveWordmarks = new WeakSet();
   const libraryButtons = new WeakSet();
   const homeNews = new Map();
+  let release = {}, dismissedRelease = '', releaseBox, releaseTouched = false, dismissalTouched = false;
+  function placeReleaseNotice() {
+    if (!releaseBox || releaseBox.hidden) return;
+    const nav = document.querySelector('.navbar');
+    releaseBox.style.top = `${Math.max(12, (nav?.getBoundingClientRect().bottom || 0) + 8)}px`;
+  }
+  function releaseNotice() {
+    if (window.top !== window || !globalThis.WebClassReleaseVersion || !document.body) return;
+    const available = WebClassReleaseVersion.isNewerVersion(release.version, chrome.runtime.getManifest().version);
+    if (!releaseBox?.isConnected) releaseBox = document.getElementById('wcl-release-notice');
+    if (!available || dismissedRelease === release.version || !document.querySelector('.navbar')) {
+      if (releaseBox) releaseBox.hidden = true;
+      return;
+    }
+    if (!releaseBox) {
+      releaseBox = document.createElement('aside'); releaseBox.id = 'wcl-release-notice'; releaseBox.setAttribute('role', 'status');
+      const copy = document.createElement('div'), title = document.createElement('strong'), detail = document.createElement('span');
+      title.textContent = 'WebClass拡張機能のアップデートがあります';
+      detail.className = 'wcl-release-version'; copy.append(title, detail);
+      const link = document.createElement('a'); link.href = 'https://github.com/penguino-lab/Webclass-manager#更新方法';
+      link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '更新する ↗';
+      const close = document.createElement('button'); close.type = 'button'; close.textContent = '×';
+      close.setAttribute('aria-label', 'このバージョンの更新案内を閉じる');
+      close.addEventListener('click', () => {
+        dismissedRelease = release.version; releaseBox.hidden = true;
+        chrome.storage.local.set({ dismissedUpdateVersion: dismissedRelease }).catch(() => {});
+      });
+      releaseBox.append(copy, link, close); document.body.append(releaseBox);
+    }
+    const detail = releaseBox.querySelector('.wcl-release-version');
+    const text = `新しいバージョン ${release.version} を公開しました`;
+    if (detail.textContent !== text) detail.textContent = text;
+    releaseBox.hidden = false; placeReleaseNotice();
+  }
+  addEventListener('resize', placeReleaseNotice, { passive: true });
+  addEventListener('scroll', placeReleaseNotice, { passive: true });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   function libraryAction(button) {
     if (libraryButtons.has(button)) return;
@@ -364,7 +400,7 @@
   }
   function observe() { observer.observe(document.documentElement,{childList:true,subtree:true}); }
   function update() {
-    observer.disconnect(); header(); homeLibrary(); privateNames(); introduction(); timetable(); observe();
+    observer.disconnect(); header(); homeLibrary(); privateNames(); introduction(); timetable(); releaseNotice(); observe();
   }
   function schedule() { if (queued) return; queued = true; queueMicrotask(() => { queued = false; update(); }); }
   function nextDay() {
@@ -374,14 +410,19 @@
   globalThis.WebClassPageUI = Object.freeze({ update });
   let cached; try { cached = localStorage.getItem(cacheKey); } catch {}
   applyTheme(cached);
-  chrome.storage.local.get({ [themeKey]:themes[0].id, [bannerKey]:'' }).then(data => {
+  chrome.storage.local.get({ [themeKey]:themes[0].id, [bannerKey]:'', publicReleaseCheck: {}, dismissedUpdateVersion: '' }).then(data => {
     if (!selected) applyTheme(data[themeKey]);
     if (!bannerTouched) applyBanner(data[bannerKey]);
+    if (!releaseTouched) release = data.publicReleaseCheck || {};
+    if (!dismissalTouched) dismissedRelease = data.dismissedUpdateVersion || '';
+    schedule();
   }).catch(() => {});
   chrome.storage.onChanged.addListener((changes,area) => {
     if (area !== 'local') return;
     if (changes[themeKey]) applyTheme(changes[themeKey].newValue);
     if (changes[bannerKey]) { bannerTouched = true; applyBanner(changes[bannerKey].newValue); }
+    if (changes.publicReleaseCheck) { releaseTouched = true; release = changes.publicReleaseCheck.newValue || {}; schedule(); }
+    if (changes.dismissedUpdateVersion) { dismissalTouched = true; dismissedRelease = changes.dismissedUpdateVersion.newValue || ''; schedule(); }
   });
   observer = new MutationObserver(schedule);
   document.addEventListener('DOMContentLoaded',schedule,{once:true});

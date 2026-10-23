@@ -26,8 +26,11 @@
   .wcl-course-card.wcl-openable{cursor:pointer}
   .wcl-course-card.wcl-openable:hover{background:var(--wcl-soft,#eef6ff);box-shadow:inset 3px 0 var(--wcl-accent,#236abd)}
   .wcl-course-card:focus-visible,a.course-webclass:focus-visible,.wcl-copy-code:focus-visible,.wcl-course-bottom-home:focus-visible{outline:3px solid var(--wcl-accent,#f1b734);outline-offset:3px}
-  .wcl-course-card.wcl-unavailable{background:var(--wcl-heading,#eef0f3);color:var(--wcl-muted,#6b7280)}
-  .wcl-unavailable .cm-contentsList_contentName{color:var(--wcl-muted,#6b7280)}
+  /* Unavailable rows stay neutral even when a theme recolors native children. */
+  .wcl-course-card.wcl-unavailable{--wcl-surface:#eceef0;--wcl-ink:#858b93;--wcl-muted:#858b93;--wcl-link:#747c86;--wcl-hover:#4d5560;background:#eceef0!important;color:#858b93!important;filter:grayscale(1)}
+  .wcl-course-card.wcl-unavailable :is(div,h4,span){background-color:transparent!important;color:#858b93!important}
+  .wcl-course-card.wcl-unavailable a{color:#747c86!important}
+  .wcl-course-card.wcl-unavailable a:hover,.wcl-course-card.wcl-unavailable a:focus-visible{color:#4d5560!important;text-decoration:underline}
   .wcl-unavailable .cm-contentsList_contentName>div:not(.cl-contentsList_new){display:inline}
   .wcl-unavailable-badge{display:inline; margin-left:8px;color:var(--wcl-muted,#687386);font:400 12px/1.4 system-ui;white-space:nowrap}
   .wcl-course-bottom-home{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 24px;margin-top:12px;border:1px solid var(--wcl-line,#ccc);border-radius:6px;background:var(--wcl-surface,#fff);color:var(--wcl-ink,#333)!important;font:500 16px/1.4 system-ui;text-decoration:none!important}

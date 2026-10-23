@@ -2,6 +2,10 @@ import { hostPattern, inSite } from './core.js';
 import { discoverWebClassSite } from './site-discovery.js';
 
 export function createSiteOnboarding(api, { settings, activate }) {
+  // Serialize only setup state, never behind downloads or page injection.
+  let queue = Promise.resolve();
+  const serial = fn => { const job = queue.then(fn); queue = job.catch(() => {}); return job; };
+  const nativeRequests = new Map();
   const key = 'siteAccess';
   const read = async () => ({ pending: {}, shown: [], ...(await api.storage.session.get(key))[key] });
   const save = state => api.storage.session.set({ [key]: state });
@@ -19,6 +23,10 @@ export function createSiteOnboarding(api, { settings, activate }) {
   }
 
   async function requestForTab(tab, { force = false } = {}) {
+    // Events can be queued during redirects or a switch to another tab.
+    if (api.tabs.get) {
+      try { tab = await api.tabs.get(tab.id); } catch { return false; }
+    }
     const s = await settings();
     if (!s.enabled || !Number.isInteger(tab.id)) return false;
     const site = candidate(tab, s);
@@ -29,12 +37,14 @@ export function createSiteOnboarding(api, { settings, activate }) {
     state.pending[tab.id] = { site, previousSite: s.site };
     state.pending = Object.fromEntries(Object.entries(state.pending).slice(-50));
     await save(state);
-    if (!granted) {
-      try { await api.permissions.addHostAccessRequest({ tabId: tab.id, pattern: site + '*' }); }
-      catch { /* The extension's own prompt remains available if Chrome hides its request. */ }
+    if (!granted && nativeRequests.get(tab.id) !== site) {
+      nativeRequests.set(tab.id, site);
+      // Chrome's optional native indicator must not delay our own prompt.
+      Promise.resolve().then(() => api.permissions.addHostAccessRequest({ tabId: tab.id, pattern: site + '*' }))
+        .catch(() => { if (nativeRequests.get(tab.id) === site) nativeRequests.delete(tab.id); });
     }
     // Do not steal focus for background tabs, redirects or every page load.
-    if (!tab.active || tab.status === 'loading' || (!force && state.shown.includes(site))) return true;
+    if (!tab.active || (!force && state.shown.includes(site))) return true;
     if (state.windowId !== undefined) {
       try {
         await api.windows.get(state.windowId);
@@ -78,7 +88,12 @@ export function createSiteOnboarding(api, { settings, activate }) {
   }
 
   async function removeTab(tabId) {
+    nativeRequests.delete(tabId);
     const state = await read(); delete state.pending[tabId]; await save(state);
   }
-  return { requestForTab, permissionAdded, message, removeTab };
+  return {
+    requestForTab: (tab, options) => serial(() => requestForTab(tab, options)),
+    permissionAdded, message,
+    removeTab: tabId => serial(() => removeTab(tabId))
+  };
 }

@@ -5,7 +5,7 @@ const session = {};
 const saved = { enabled:true, root:'WebClass', site:'https://example.edu/webclass/', selector:'' };
 let overrides = {};
 globalThis.chrome = {
-  action:{onClicked:event()},
+  action:{onClicked:event(),setTitle:async value=>{session.actionTitle=value.title;}},
   contextMenus:{onClicked:event(),removeAll:async()=>{},create:value=>{session.actionMenu=value;}},
   storage:{ local:{get:async()=>({settings:saved,courseOverrides:overrides})}, session:{get:async()=>structuredClone(session),set:async v=>Object.assign(session,structuredClone(v)),clear:async()=>{delete session.intents;}},onChanged:event() },
   runtime:{id:'test-extension',getURL:path=>'chrome-extension://test-extension/'+path,getContexts:async()=>[{contextType:'OFFSCREEN_DOCUMENT'}],sendMessage:async value=>{session.runtimeMessage=value;return value.type==='preview-job'?{ok:true,url:'blob:preview',token:'preview-token'}:{accepted:true};},onInstalled:event(),onStartup:event(),onMessage:event()},
@@ -38,6 +38,44 @@ test('toolbar opens the configured university and the action context menu opens 
   assert.equal(session.createdTab.url,saved.site);
   chrome.contextMenus.onClicked.listeners[0]({menuItemId:'webclass-open-library'});
   assert.equal(session.createdTab.url,'chrome-extension://test-extension/library.html');
+});
+
+test('library toolbar preference bypasses WebClass setup even on an unapproved site', async () => {
+  saved.actionOpensLibrary = true;
+  try {
+    await chrome.action.onClicked.listeners[0]({ id: 71, active: true, url: 'https://other.edu/webclass/' });
+    assert.equal(session.createdTab.url, 'chrome-extension://test-extension/library.html');
+  } finally { delete saved.actionOpensLibrary; }
+});
+
+test('setup window and URL info stay responsive while the download queue is blocked', async () => {
+  const originalGet = chrome.storage.session.get, originalContains = chrome.permissions.contains;
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  chrome.storage.session.get = async key => { if (key === 'jobs') await blocked; return originalGet(key); };
+  chrome.permissions.contains = async () => false;
+  const tab = { id: 72, active: true, status: 'loading', url: 'https://new.example.edu/webclass/' };
+  chrome.tabs.get = async () => tab;
+  chrome.windows = { create: async value => { session.prompt = value; return { id: 1 }; } };
+  const pending = new Promise(resolve => chrome.runtime.onMessage.listeners[0](
+    { type: 'save-progress', jobId: 'stalled' },
+    { id: chrome.runtime.id, url: chrome.runtime.getURL('offscreen.html') }, resolve));
+  try {
+    await chrome.tabs.onUpdated.listeners[0](tab.id, { url: tab.url }, tab);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.match(session.prompt.url, /onboarding.html\?tab=72$/);
+    const info = new Promise(resolve => chrome.runtime.onMessage.listeners[0](
+      { type: 'site-access-info', tabId: tab.id },
+      { id: chrome.runtime.id, url: chrome.runtime.getURL('onboarding.html') + '?tab=72' }, resolve));
+    const result = await Promise.race([info, new Promise((_, reject) => setTimeout(() => reject(Error('setup blocked by download')), 500))]);
+    assert.equal(result.site, 'https://new.example.edu/webclass/');
+    await chrome.action.onClicked.listeners[0]();
+    assert.equal(session.createdTab.url, saved.site);
+  } finally {
+    release(); await pending;
+    chrome.storage.session.get = originalGet; chrome.permissions.contains = originalContains;
+    delete chrome.tabs.get; delete chrome.windows;
+  }
 });
 const sender = { id:'test-extension',tab:{id:1},url:'https://example.edu/webclass/course?id=1' };
 function intent() { return new Promise(resolve=>chrome.runtime.onMessage.listeners[0]({type:'intent',course:{name:'数学'},target:'https://example.edu/download/1'},sender,resolve)); }

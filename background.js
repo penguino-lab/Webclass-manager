@@ -6,17 +6,27 @@ const previewTabs = new Map();
 const webClassLogin = 'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML';
 const libraryMenuId = 'webclass-open-library';
 const onboarding = createSiteOnboarding(chrome, { settings, activate: activateSite });
-chrome.action.onClicked.addListener(tab => serial(async () => {
-  if (tab && await onboarding.requestForTab(tab, { force: true })) return;
-  const s = await settings();
-  await chrome.tabs.create({ url: s.site === DEFAULTS.site ? webClassLogin : s.site });
-}).catch(console.error));
+chrome.action.onClicked.addListener(async tab => {
+  try {
+    const s = await settings();
+    if (s.actionOpensLibrary) {
+      await chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
+      return;
+    }
+    if (tab && await onboarding.requestForTab(tab, { force: true })) return;
+    await chrome.tabs.create({ url: s.site === DEFAULTS.site ? webClassLogin : s.site });
+  } catch (error) { console.error(error); }
+});
 chrome.contextMenus.onClicked.addListener(info => {
   if (info.menuItemId === libraryMenuId) chrome.tabs.create({url:chrome.runtime.getURL('library.html')}).catch(console.error);
 });
 async function syncActionMenu() {
   await chrome.contextMenus.removeAll();
   chrome.contextMenus.create({id:libraryMenuId,title:'ライブラリを開く',contexts:['action']});
+  await syncActionTitle();
+}
+async function syncActionTitle() {
+  await chrome.action.setTitle({ title: (await settings()).actionOpensLibrary ? 'ライブラリを開く' : 'WebClassを開く' });
 }
 function serial(fn) { const job = queue.then(fn); queue = job.catch(() => {}); return job; }
 async function settings() { return { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings }; }
@@ -92,12 +102,13 @@ chrome.runtime.onStartup.addListener(() => serial(async () => {
   for (const tab of await chrome.tabs.query({})) await requestForTab(tab);
 }).catch(console.error));
 chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
-  if (change.url || change.title || change.status === 'complete') serial(() => requestForTab(tab)).catch(console.error);
+  if (change.url || change.title || change.status === 'complete') requestForTab(tab).catch(console.error);
   if (change.status === 'complete') refreshTypography(tab).catch(console.error);
 });
-chrome.tabs.onActivated.addListener(({ tabId }) => serial(async () => {
-  await requestForTab(await chrome.tabs.get(tabId));
-}).catch(console.error));
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try { await requestForTab(await chrome.tabs.get(tabId)); }
+  catch (error) { console.error(error); }
+});
 chrome.permissions.onAdded.addListener(permissions => serial(async () => {
   await onboarding.permissionAdded(permissions);
   await syncScripts();
@@ -106,7 +117,9 @@ chrome.permissions.onAdded.addListener(permissions => serial(async () => {
 }).catch(console.error));
 chrome.permissions.onRemoved.addListener(() => serial(async () => { await chrome.storage.session.remove(['intents', 'courses', 'materials']); await syncScripts(); }).catch(console.error));
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.settings) serial(async () => {
+  if (area === 'local' && changes.settings) syncActionTitle().catch(console.error);
+  if (area === 'local' && changes.settings && ['site', 'enabled'].some(key =>
+    (changes.settings.oldValue?.[key] ?? DEFAULTS[key]) !== (changes.settings.newValue?.[key] ?? DEFAULTS[key]))) serial(async () => {
     await chrome.storage.session.remove(['intents', 'courses', 'materials']); await syncScripts();
     const s = await settings();
     for (const tab of await chrome.tabs.query({})) {
@@ -218,7 +231,7 @@ async function startPreview(message, sender, s) {
 }
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (['site-access-info', 'site-access-activate'].includes(message?.type)) {
-    serial(() => onboarding.message(message, sender)).then(reply, () => reply({ ok: false, error: '設定を登録できませんでした。' }));
+    onboarding.message(message, sender).then(reply, () => reply({ ok: false, error: '設定を登録できませんでした。' }));
     return true;
   }
   if (message?.target === 'offscreen') return;
@@ -302,8 +315,8 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   }).then(reply, () => reply({ ok: false, error: '操作を開始できませんでした。拡張とWebClassを再読み込みしてください。' }));
   return true;
 });
+chrome.tabs.onRemoved.addListener(tab => onboarding.removeTab(tab).catch(console.error));
 chrome.tabs.onRemoved.addListener(tab => serial(async () => {
-  await onboarding.removeTab(tab);
   const token = previewTabs.get(tab); if (token) { previewTabs.delete(tab); try { await chrome.runtime.sendMessage({ target: 'offscreen', type: 'release-preview', token }); } catch {} }
   const { intents = [] } = await chrome.storage.session.get('intents');
   await chrome.storage.session.set({ intents: intents.filter(i => i.tab !== tab) });

@@ -207,6 +207,7 @@ async function refresh() {
 async function renderSettings() {
   currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings };
   $('settings-enabled').checked = currentSettings.enabled;
+  $('settings-action-library').checked = currentSettings.actionOpensLibrary;
   $('settings-course-names').checked = emphasizeCourseNames;
   $('settings-site').value = currentSettings.site;
   $('settings-folder-state').textContent = currentSettings.saveMode === 'directory' ? `選択したフォルダー：${currentSettings.folderName}` : 'ブラウザのダウンロード先を使用中';
@@ -251,7 +252,7 @@ $('library-settings-form').addEventListener('submit', async event => {
   try {
     const site = siteURL($('settings-site').value.trim());
     const granted = await chrome.permissions.request({ origins: [hostPattern(site)] });
-    currentSettings = { ...currentSettings, enabled: $('settings-enabled').checked, site };
+    currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings, enabled: $('settings-enabled').checked, site, actionOpensLibrary: $('settings-action-library').checked };
     delete currentSettings.root; await chrome.storage.local.set({ settings: currentSettings });
     const permissions = await chrome.permissions.getAll();
     const obsolete = (permissions.origins || []).filter(origin => origin !== hostPattern(site));

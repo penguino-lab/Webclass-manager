@@ -54,7 +54,7 @@ function directory(children, error) {
 const handle = (text, error) => ({ kind: 'file', async getFile() { if (error) throw error; return { size: text.length, lastModified: 123 }; } });
 test('scan includes nested existing files and empty folders, reports inaccessible children, and does not write', async () => {
   const root = directory({ '数学': directory({ '資料.pdf': handle('pdf'), '補足': directory({ 'メモ.txt': handle('memo') }) }), '空': directory({}), '削除済み': directory({}, Error('missing')), '消えた.pdf': handle('', Error('missing')) });
-  const result = await scanDirectory(root);
+  const result = await scanDirectory(root, { recursive: true });
   assert.equal(result.entries.find(entry => entry.path === '数学/補足/メモ.txt').size, 4);
   assert.ok(result.entries.some(entry => entry.path === '空'));
   assert.deepEqual(result.errors.sort(), ['削除済み', '消えた.pdf'].sort());
@@ -63,6 +63,20 @@ test('scan includes nested existing files and empty folders, reports inaccessibl
 test('cancelled scans cannot return stale data when the destination changes', async () => {
   const controller = new AbortController(); controller.abort();
   await assert.rejects(scanDirectory(directory({ '資料.pdf': handle('pdf') }), { signal: controller.signal }), { name: 'AbortError' });
+});
+
+test('default scan reads only the root and immediate course contents, without touching nested handles', async () => {
+  let nestedReads = 0;
+  const deep = { kind: 'directory', async *entries() { nestedReads++; throw Error('must not be read'); } };
+  const root = directory({ '案内.txt': handle('root'), '数学': directory({ '資料.pdf': handle('pdf'), '補足': deep }), '空': directory({}) });
+  const result = await scanDirectory(root);
+  assert.deepEqual(result.entries.map(entry => entry.path), ['案内.txt', '数学', '空', '数学/資料.pdf']);
+  assert.equal(nestedReads, 0);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.entries.find(entry => entry.path === '数学').size, 3);
+  const expanded = await scanDirectory(root, { recursive: true });
+  assert.equal(nestedReads, 1);
+  assert.deepEqual(expanded.errors, ['数学/補足']);
 });
 
 const folder = path => ({ path, name: path.split('/').pop(), parent: path.split('/').slice(0, -1).join('/'), kind: 'directory', type: 'folder' });

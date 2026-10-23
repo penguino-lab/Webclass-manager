@@ -60,11 +60,14 @@ node tests/theme-browser.mjs
 node tests/banner-browser.mjs
 node tests/home-ui-browser.mjs
 node tests/onboarding-browser.mjs
+node tests/library-first-run-browser.mjs
 ```
 
 総合テストは添付・PDF保存、重複・再ダウンロード、講義別整理、ライブラリ検索・プレビュー等を確認します。テーマ専用テストは配色と同期、バナー専用テストはヘッダー画像の切り取りと保持、ホーム専用テストはライブラリバナーとお知らせティッカーを確認します。
 
 初回導入専用テストは、事前のホスト権限がないプロファイルでの検出と案内・拒否、ユーザー操作内での権限要求、許可済みのテスト用プロファイルでのURL登録と実際の画面適用を確認します。Chromeのネイティブな許可ダイアログの承認操作自体は手動確認が必要です。
+
+`library-first-run-browser.mjs` は、初期画面からのフォルダー選択・キャンセル・拒否、空フォルダー、標準の読み込み範囲、深いフォルダーを読む設定と再読み込み、更新バナー・キャッシュ・案内を閉じる操作・手動確認・ヘッダーの高さ・狭い画面の配置を検証します。通常は更新情報をテスト用の応答に置き換えます。`CHECK_LIVE_UPDATE=1` を指定した場合のみ、実際の公開GitHubへ更新確認を1回行います。
 
 既存のPlaywrightやChromiumを使う場合は `PLAYWRIGHT_MODULE_PATH` と `PLAYWRIGHT_EXECUTABLE_PATH` を指定できます。出力はリポジトリに隣接する `tmp/` 以下です。
 

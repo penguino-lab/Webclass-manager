@@ -1,5 +1,17 @@
 import { DEFAULTS, TTL, inSite, digest, chooseIntent, destination, filename, courseId, contentsId, usableName, hostPattern } from './core.js';
+import { previewType } from './resource-tools.js';
 let queue = Promise.resolve(), creating;
+const previewTabs = new Map();
+const webClassLogin = 'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML';
+const libraryMenuId = 'webclass-open-library';
+chrome.action.onClicked.addListener(() => { chrome.tabs.create({url:webClassLogin}).catch(console.error); });
+chrome.contextMenus.onClicked.addListener(info => {
+  if (info.menuItemId === libraryMenuId) chrome.tabs.create({url:chrome.runtime.getURL('library.html')}).catch(console.error);
+});
+async function syncActionMenu() {
+  await chrome.contextMenus.removeAll();
+  chrome.contextMenus.create({id:libraryMenuId,title:'ライブラリを開く',contexts:['action']});
+}
 function serial(fn) { const job = queue.then(fn); queue = job.catch(() => {}); return job; }
 async function settings() { return { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings }; }
 async function status(code, path = '', error = '') {
@@ -14,10 +26,23 @@ async function existingDownload(path) {
   const items = await chrome.downloads.search({ state: 'complete', exists: true, limit: 100, orderBy: ['-startTime'] });
   return items.find(item => matchesDownloadPath(item.filename, path));
 }
+async function applyTypography(tabId) {
+  try {
+    // USER origin also overrides legacy inline !important fonts in old windows.
+    await chrome.scripting.removeCSS({target:{tabId,allFrames:true},files:['typography.css'],origin:'USER'});
+    await chrome.scripting.insertCSS({target:{tabId,allFrames:true},files:['typography.css'],origin:'USER'});
+  } catch { /* The tab may close or navigate while its styles are being applied. */ }
+}
+async function refreshTypography(tab) {
+  const s = await settings();
+  if (!s.site || !tab.url || new URL(tab.url).origin !== new URL(s.site).origin) return;
+  if (await chrome.permissions.contains({origins:[hostPattern(s.site)]})) await applyTypography(tab.id);
+}
 async function inject(tabId) {
   try {
-    await chrome.scripting.insertCSS({ target: { tabId, allFrames: true }, files: ['course-ui.css'] });
-    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['webclass-adapter.js', 'material-ui.js', 'course-ui.js', 'content.js'] });
+    await applyTypography(tabId);
+    await chrome.scripting.insertCSS({ target: { tabId, allFrames: true }, files: ['page-ui.css', 'course-ui.css'] });
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['page-themes.js', 'banner-crop.js', 'page-ui.js', 'webclass-adapter.js', 'material-ui.js', 'course-ui.js', 'content.js'] });
   } catch {}
 }
 async function syncScripts() {
@@ -27,11 +52,17 @@ async function syncScripts() {
   const pattern = hostPattern(s.site);
   if (await chrome.permissions.contains({ origins: [pattern] })) {
     const site = new URL(s.site);
+    const pagePattern = site.origin + site.pathname.replace(/\/?$/, '/') + '*';
     const coursePattern = site.origin + site.pathname.replace(/\/?$/, '/') + 'course.php/*';
     await chrome.scripting.registerContentScripts([
+      { id: 'webclass-typography', matches: [pattern], css: ['typography.css'], runAt: 'document_start', allFrames: true, matchOriginAsFallback:true },
+      { id: 'webclass-page-ui', matches: [pagePattern], css: ['page-ui.css'], js: ['page-themes.js','banner-crop.js','page-ui.js'], runAt: 'document_start', allFrames: true },
       { id: 'webclass-course-ui', matches: [coursePattern], css: ['course-ui.css'], js: ['course-ui.js'], runAt: 'document_start', allFrames: true },
       { id: 'webclass', matches: [pattern], js: ['webclass-adapter.js', 'material-ui.js', 'content.js'], runAt: 'document_idle', allFrames: true }
     ]);
+    // Registered styles only affect future documents. Refresh already-open
+    // pages/popups too, including legacy URLs outside the course page path.
+    for (const tab of await chrome.tabs.query({url:pattern})) await applyTypography(tab.id);
   }
 }
 export async function requestForTab(tab) {
@@ -45,12 +76,14 @@ export async function requestForTab(tab) {
 chrome.runtime.onInstalled.addListener(() => serial(async () => {
   const initial = await settings(); delete initial.root;
   await chrome.storage.local.set({ settings: initial });
+  await syncActionMenu();
   await syncScripts();
   for (const tab of await chrome.tabs.query({})) await requestForTab(tab);
 }).catch(console.error));
-chrome.runtime.onStartup.addListener(() => serial(syncScripts).catch(console.error));
+chrome.runtime.onStartup.addListener(() => serial(async () => { await syncActionMenu(); await syncScripts(); }).catch(console.error));
 chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
   if (change.url || change.status === 'complete') requestForTab(tab).catch(console.error);
+  if (change.status === 'complete') refreshTypography(tab).catch(console.error);
 });
 chrome.permissions.onAdded.addListener(() => serial(async () => {
   await syncScripts();
@@ -126,14 +159,64 @@ async function startSave(message, sender, s) {
   } });
   return response?.accepted ? { ok: true, jobId: id } : { ok: false };
 }
+async function startBulk(message, sender, s) {
+  const course = await resolveCourse(message.context || {}, sender);
+  if (!course) return { ok: false, error: '講義名を認識できませんでした。講義ページを再読み込みしてください。' };
+  const materialId = contentsId(sender.url);
+  if (!materialId || !/\/txtbk_show_chapter\.php$/.test(new URL(sender.url).pathname)) {
+    return { ok: false, error: '教材の目次画面から操作してください。' };
+  }
+  const name = String(message.context?.materialName || '教材').slice(0, 200);
+  const materials = [{ url: sender.url, name }];
+  // Chrome supplies the top-level tab URL. Include its frames only for this material.
+  if (inSite(sender.tab.url, s.site) && contentsId(sender.tab.url) === materialId &&
+      /\/txtbk_frame\.php$/.test(new URL(sender.tab.url).pathname)) {
+    materials.push({ url: sender.tab.url, name });
+  }
+  const resources = Array.isArray(message.resources) ? message.resources.slice(0, 500).flatMap(item => {
+    try {
+      const url = new URL(item.url);
+      if (item.kind !== 'pdf' || !inSite(url.href, s.site) || !url.pathname.toLowerCase().endsWith('.pdf') ||
+          !course.id || courseId(url.href) !== course.id) return [];
+      return [{ kind: 'pdf', url: url.href, name: String(item.name || '教材.pdf').slice(0, 300) }];
+    } catch { return []; }
+  }) : [];
+  const id = crypto.randomUUID(); await offscreen();
+  const { jobs = {} } = await chrome.storage.session.get('jobs');
+  jobs[id] = { tab: sender.tab.id, frame: sender.frameId || 0, bulk: true, time: Date.now() };
+  await chrome.storage.session.set({ jobs: Object.fromEntries(Object.entries(jobs).filter(([, job]) => Date.now() - job.time < 3600000).slice(-100)) });
+  const response = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'bulk-save-job', job: { id, materials, resources, materialId, course: course.name, courseId: course.id || '', site: s.site, saveMode: s.saveMode } });
+  return response?.accepted ? { ok: true, jobId: id } : { ok: false, error: '一括保存を開始できませんでした。' };
+}
+async function startPreview(message, sender, s) {
+  const url = new URL(message.url, sender.url);
+  const name = String(message.name || '').slice(0, 300);
+  if (!inSite(url.href, s.site) || !/\/(?:file_down|download)\.php(?:\/|$)/.test(url.pathname) || !previewType(name)) {
+    return { ok: false, error: '提出物の取得先または形式を確認できませんでした。' };
+  }
+  await offscreen();
+  const result = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'preview-job', job: {
+    url: url.href, name, kind: message.kind === 'attachment' ? 'attachment' : 'file', site: s.site, courseId: courseId(sender.url)
+  } });
+  if (!result?.ok) return result || { ok: false };
+  const tab = await chrome.tabs.create({ url: result.url }); previewTabs.set(tab.id, result.token);
+  return { ok: true };
+}
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (message?.target === 'offscreen') return;
-  if (['browser-check', 'browser-save', 'save-progress', 'save-result'].includes(message?.type)) {
+  if (['browser-check', 'browser-save', 'save-progress', 'save-result', 'bulk-progress', 'bulk-result'].includes(message?.type)) {
     if (sender.id !== chrome.runtime.id || sender.tab || sender.url !== chrome.runtime.getURL('offscreen.html')) return;
     serial(async () => {
       const { jobs = {} } = await chrome.storage.session.get('jobs');
       if (!jobs[message.jobId]) return;
-      if (message.type === 'save-progress') {
+      if (message.type === 'bulk-progress') {
+        const job = jobs[message.jobId];
+        try { await chrome.tabs.sendMessage(job.tab, { type: 'bulk-progress', jobId: message.jobId, current: message.current, total: message.total }, { frameId: job.frame }); } catch {}
+      } else if (message.type === 'bulk-result') {
+        const job = jobs[message.jobId];
+        try { await chrome.tabs.sendMessage(job.tab, { type: 'bulk-result', jobId: message.jobId, saved: message.saved, skipped: message.skipped, failed: message.failed, total: message.total, error: message.error }, { frameId: job.frame }); } catch {}
+        delete jobs[message.jobId]; await chrome.storage.session.set({ jobs });
+      } else if (message.type === 'save-progress') {
         const job = jobs[message.jobId];
         try { await chrome.tabs.sendMessage(job.tab, { type: 'save-progress', jobId: message.jobId, loaded: message.loaded, total: message.total, percent: message.percent }, { frameId: job.frame }); } catch {}
       } else if (message.type === 'browser-check') {
@@ -162,7 +245,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     }).then(result => reply(result || { ok: true }), () => { status('save-failed'); reply({ ok: false }); });
     return true;
   }
-  if (!['intent', 'page', 'resolve-course', 'direct-download', 'open-download-location'].includes(message?.type)) return;
+  if (!['intent', 'page', 'resolve-course', 'direct-download', 'bulk-download', 'preview-submission', 'open-download-location', 'open-library'].includes(message?.type)) return;
   serial(async () => {
     const s = await settings();
     // Old framesets can reuse an about:blank document after changing its location.
@@ -172,6 +255,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       if (frame?.documentId === sender.documentId && inSite(frame.result, s.site)) sender = { ...sender, url: frame.result };
     }
     if (sender.id !== chrome.runtime.id || !sender.tab || !inSite(sender.url, s.site)) return { ok: false };
+    if (message.type === 'open-library') { await chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }); return { ok: true }; }
     if (message.type === 'open-download-location') {
       const { completedDownloads = {} } = await chrome.storage.session.get('completedDownloads');
       const completed = completedDownloads[message.jobId];
@@ -180,6 +264,8 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       return { ok: true };
     }
     if (message.type === 'direct-download') return s.enabled ? startSave(message, sender, s) : { ok: false };
+    if (message.type === 'bulk-download') return s.enabled ? startBulk(message, sender, s) : { ok: false, error: '自動整理を有効にしてください。' };
+    if (message.type === 'preview-submission') return startPreview(message, sender, s);
     let course = await resolveCourse(message.context || { course: message.course }, sender);
     if (!course && sender.frameId > 0) {
       try { course = await chrome.tabs.sendMessage(sender.tab.id, { type: 'local-course' }, { frameId: 0 }); } catch {}
@@ -199,6 +285,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   return true;
 });
 chrome.tabs.onRemoved.addListener(tab => serial(async () => {
+  const token = previewTabs.get(tab); if (token) { previewTabs.delete(tab); try { await chrome.runtime.sendMessage({ target: 'offscreen', type: 'release-preview', token }); } catch {} }
   const { intents = [] } = await chrome.storage.session.get('intents');
   await chrome.storage.session.set({ intents: intents.filter(i => i.tab !== tab) });
 }).catch(console.error));

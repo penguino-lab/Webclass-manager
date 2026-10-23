@@ -1,0 +1,4 @@
+/* Respect the browser's default sans-serif (Japanese Gothic) font. Explicitly
+   reset legacy font tags/shorthands while preserving icon, code and math fonts. */
+:root,:root body,:root body :not(.glyphicon,.glyphicon *,.fa,.fa *,[class*="fa-"],[class*="fa-"] *,.material-icons,.material-icons *,.material-symbols-outlined,.material-symbols-outlined *,svg,svg *,math,math *,pre,pre *,code,code *,.katex,.katex *,.MathJax,.MathJax *){font-family:sans-serif!important}
+textarea.LangKeyboad.TabEnable.inputcounter{box-sizing:border-box!important;max-width:100%;padding:10px 14px!important;font-size:15px!important;line-height:1.6!important;border:1px solid var(--wcl-line,#bcc5ce)!important;border-radius:4px!important;resize:both!important;overflow:auto}

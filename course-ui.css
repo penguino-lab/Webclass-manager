@@ -1,8 +1,9 @@
 /* Registered at document_start so the native layout is never painted first. */
 @scope (html[data-wcl-course-ui]) {
-  a.course-webclass{display:flex!important;width:max-content;align-items:center;min-height:44px;padding:0 24px!important;margin-left:-24px;margin-bottom:6px;border:0;border-radius:0;font-size:18px!important;font-weight:400;color:#fff!important;background:transparent;text-decoration:underline}
+  a.course-webclass{display:flex!important;width:max-content;align-items:center;min-height:44px;padding:0 24px!important;margin-left:-24px;margin-bottom:6px;border:0;border-radius:0;font-size:18px!important;font-weight:400;color:var(--wcl-text,#fff)!important;background:transparent;text-decoration:underline}
   a.course-webclass .glyphicon-home{display:none!important}
-  .navbar-header:has(.course-name){max-width:calc(100% - 220px)}
+  .wcl-course-home-label{display:inline-block;transform:translateY(4px);pointer-events:none}
+  .navbar-header:has(.course-name){max-width:calc(100% - 264px)}
   .navbar-brand:has(.course-name){max-width:100%;white-space:normal;height:auto!important}
   @media(min-width:768px){.navbar-brand:has(.course-name){margin-left:0!important;padding-left:0!important}}
   a.course-webclass:hover{opacity:.85}
@@ -14,30 +15,30 @@
   .wcl-copy-code:hover{background:#ffffff18;text-decoration:underline}
   .alert-info:has(a[href*="information.php"],a[href*="msg_editor.php"]),.cm-sideNav_folders,.wcl-filtered-item,.wcl-filtered-folder{display:none!important}
   .wcl-course-sidebar{display:block!important}
-  #wcl-course-filters{box-sizing:border-box;width:var(--wcl-filter-width,240px);background:#f4f7fb;border:1px solid #cddaea;border-radius:12px;padding:18px;font:14px/1.6 system-ui;color:#24354a}
+  #wcl-course-filters{box-sizing:border-box;width:var(--wcl-filter-width,240px);background:var(--wcl-soft,#f4f7fb);border:1px solid var(--wcl-line,#cddaea);border-radius:12px;padding:18px;font:14px/1.6 system-ui;color:var(--wcl-ink,#24354a)}
   #wcl-course-filters h3{font-size:17px;font-weight:700;margin:0 0 12px}
   #wcl-course-filters label{display:flex;align-items:flex-start;gap:10px;min-height:48px;padding:8px 0;margin:0;cursor:pointer;font-weight:500}
-  #wcl-course-filters input{width:19px;height:19px;margin:3px 0 0;flex-shrink:0;accent-color:#1e68b7}
-  #wcl-course-filters p{font-size:13px;color:#53667c;margin:12px 0 0}
+  #wcl-course-filters input{width:19px;height:19px;margin:3px 0 0;flex-shrink:0;accent-color:var(--wcl-accent,#1e68b7)}
+  #wcl-course-filters p{font-size:13px;color:var(--wcl-muted,#53667c);margin:12px 0 0}
   #wcl-filter-count{min-height:42px}
   /* Keep WebClass's original material dimensions and padding. */
   .wcl-course-card{transition:background .15s,box-shadow .15s}
   .wcl-course-card.wcl-openable{cursor:pointer}
-  .wcl-course-card.wcl-openable:hover{background:#eef6ff;box-shadow:inset 3px 0 #236abd}
-  .wcl-course-card:focus-visible,a.course-webclass:focus-visible,.wcl-copy-code:focus-visible,.wcl-course-bottom-home:focus-visible{outline:3px solid #f1b734;outline-offset:3px}
-  .wcl-course-card.wcl-unavailable{background:#eef0f3;color:#6b7280}
-  .wcl-unavailable .cm-contentsList_contentName{color:#6b7280}
+  .wcl-course-card.wcl-openable:hover{background:var(--wcl-soft,#eef6ff);box-shadow:inset 3px 0 var(--wcl-accent,#236abd)}
+  .wcl-course-card:focus-visible,a.course-webclass:focus-visible,.wcl-copy-code:focus-visible,.wcl-course-bottom-home:focus-visible{outline:3px solid var(--wcl-accent,#f1b734);outline-offset:3px}
+  .wcl-course-card.wcl-unavailable{background:var(--wcl-heading,#eef0f3);color:var(--wcl-muted,#6b7280)}
+  .wcl-unavailable .cm-contentsList_contentName{color:var(--wcl-muted,#6b7280)}
   .wcl-unavailable .cm-contentsList_contentName>div:not(.cl-contentsList_new){display:inline}
-  .wcl-unavailable-badge{display:inline; margin-left:8px;color:#687386;font:400 12px/1.4 system-ui;white-space:nowrap}
-  .wcl-course-bottom-home{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 24px;margin-top:12px;border:1px solid #ccc;border-radius:6px;background:#fff;color:#333!important;font:500 16px/1.4 system-ui;text-decoration:none!important}
-  .wcl-course-bottom-home:hover{background:#f3f3f3;border-color:#aaa}
+  .wcl-unavailable-badge{display:inline; margin-left:8px;color:var(--wcl-muted,#687386);font:400 12px/1.4 system-ui;white-space:nowrap}
+  .wcl-course-bottom-home{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 24px;margin-top:12px;border:1px solid var(--wcl-line,#ccc);border-radius:6px;background:var(--wcl-surface,#fff);color:var(--wcl-ink,#333)!important;font:500 16px/1.4 system-ui;text-decoration:none!important}
+  .wcl-course-bottom-home:hover{background:var(--wcl-soft,#f3f3f3);border-color:var(--wcl-accent,#aaa)}
   #wcl-course-skeleton{position:absolute;inset:0 15px auto;visibility:visible;pointer-events:none}
   #wcl-course-skeleton,#wcl-course-skeleton *{box-sizing:border-box}
-  .wcl-skeleton-search{height:56px;border:1px solid #e1e6ed;border-radius:10px;margin-bottom:20px;padding:20px;background:#f7f9fc}
-  .wcl-skeleton-card{height:120px;border:1px solid #e1e6ed;border-radius:4px;margin-bottom:10px;background:#fff;overflow:hidden}
-  .wcl-skeleton-heading{height:36px;padding:12px 15px;background:#f1f4f8}
+  .wcl-skeleton-search{height:56px;border:1px solid var(--wcl-line,#e1e6ed);border-radius:10px;margin-bottom:20px;padding:20px;background:var(--wcl-canvas,#f7f9fc)}
+  .wcl-skeleton-card{height:120px;border:1px solid var(--wcl-line,#e1e6ed);border-radius:4px;margin-bottom:10px;background:var(--wcl-surface,#fff);overflow:hidden}
+  .wcl-skeleton-heading{height:36px;padding:12px 15px;background:var(--wcl-heading,#f1f4f8)}
   .wcl-skeleton-lines{padding:12px 15px}
-  .wcl-skeleton-bar{height:12px;border-radius:4px;background:#e0e6ee;margin-bottom:10px;width:54%}
+  .wcl-skeleton-bar{height:12px;border-radius:4px;background:var(--wcl-line,#e0e6ee);margin-bottom:10px;width:54%}
   .wcl-skeleton-bar:last-child{margin-bottom:0}
   .wcl-skeleton-search .wcl-skeleton-bar{width:32%;margin:0}
   .wcl-skeleton-heading .wcl-skeleton-bar{width:26%;margin:0}

@@ -37,6 +37,11 @@ export async function checkMaterialVariants(context, worker, site, artifacts) {
         assert.equal(await chapter.locator('tr.bkkhaki .wcl-title-button').textContent(), label);
       }
       assert.equal(await titles.count(), variant.labels.length, 'repeated updates do not duplicate buttons');
+      const bulk = chapter.locator('#wcl-material-bulk');
+      assert.equal(await bulk.count(), 1);
+      assert.equal(await bulk.textContent(), 'この教材の資料を一括ダウンロード');
+      const placement = await bulk.evaluate(el => { const r = el.getBoundingClientRect(); return { bottom: innerHeight - r.bottom, left: r.left, position: getComputedStyle(el).position }; });
+      assert.deepEqual(placement, { bottom: 12, left: 12, position: 'fixed' });
       if (variant.name !== 'numbers') {
         const attach = chapter.locator('#attachment');
         const box = await attach.boundingBox(), titleBox = await titles.last().boundingBox();

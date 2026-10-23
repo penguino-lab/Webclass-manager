@@ -1,0 +1,227 @@
+/* Loaded at document_start on the registered WebClass site, including frames. */
+/* Reserve the home banner before the document_start script builds its button. */
+#UserTopInfo:has(#NewestInformations),.wcl-library-hero{--wcl-hero-height:clamp(160px,15vw,208px)}
+#UserTopInfo:has(#NewestInformations){position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;height:44px;min-width:0;margin-bottom:calc(var(--wcl-hero-height) + 48px)!important;border:1px solid var(--wcl-line,#e4e6eb)!important;border-radius:5px!important;background:var(--wcl-surface,#fff)}
+#UserTopInfo:has(#NewestInformations):not(.wcl-news-ticker)::after{content:'';position:absolute;top:calc(100% + 20px);left:0;right:0;height:var(--wcl-hero-height);border-radius:18px;background:#f0f1f5}
+#UserTopInfo.wcl-news-ticker:has(#NewestInformations){margin-bottom:20px!important}
+#UserTopInfo:has(#NewestInformations)>.page-header{flex:0 0 auto;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box;margin:0!important;padding:0 14px!important;border:0!important;border-right:1px solid var(--wcl-line,#e4e6eb)!important;background:transparent!important;font-size:13px;line-height:24px}
+#UserTopInfo #NewestInformations{display:flex;align-items:center;flex:1;min-width:0;gap:12px}
+#UserTopInfo #AjaxInfoBox{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+#UserTopInfo #AjaxInfoBox::-webkit-scrollbar{display:none}
+#UserTopInfo #AjaxInfoBox .infopkg{min-width:0}
+#UserTopInfo #AjaxInfoBox .info-list{display:flex;align-items:center;width:100%;box-sizing:border-box;list-style:none;margin:0!important;padding:0!important;border:0!important}
+#UserTopInfo #AjaxInfoBox .info-list>li.head{display:none!important}
+#UserTopInfo #AjaxInfoBox .info-list>li:not(.head){display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;gap:24px;box-sizing:border-box;min-width:100%;padding:0 32px 0 0!important;margin:0!important;border:0!important;background:transparent!important;white-space:nowrap;line-height:42px}
+#UserTopInfo #AjaxInfoBox .info-list>li>span:not(.wcl-news-primary){display:none!important}
+#UserTopInfo #AjaxInfoBox .wcl-news-primary{display:contents!important}
+#UserTopInfo #AjaxInfoBox a.title{display:inline-block!important;flex:0 0 auto;overflow:visible!important;padding:0!important;margin:0!important;font-size:14px!important;line-height:42px!important;text-decoration:none}
+#UserTopInfo #AjaxInfoBox a.title:hover{text-decoration:underline}
+#UserTopInfo #AjaxInfoBox .data{position:static!important;float:none!important;flex:0 0 auto;padding:0!important;margin:0!important;font-size:11px!important;line-height:42px!important;color:var(--wcl-muted,#7a8290)}
+#UserTopInfo #NewestInformations>p{flex:0 0 auto;margin:0!important;white-space:nowrap}
+#UserTopInfo #NewestInformations>p>.visible-xs{display:none!important}
+#UserTopInfo #NewestInformations>p>.hidden-xs{display:inline!important}
+#UserTopInfo #NewestInformations>p a{font-size:0;text-decoration:none}
+#UserTopInfo #NewestInformations>p a::after{content:'一覧 ↗';font-size:12px;color:var(--wcl-link,#52647b)}
+.wcl-news-pause{flex:0 0 30px;width:30px;height:30px;margin:0 6px 0 0;padding:0;border:0;border-radius:4px;background:transparent;color:var(--wcl-muted,#687587);font:14px/30px sans-serif;cursor:pointer}
+.wcl-news-pause:hover{background:var(--wcl-soft,#f1f3f6)}
+.wcl-news-pause:focus-visible,#UserTopInfo a:focus-visible{outline:2px solid var(--wcl-accent,#cc5789);outline-offset:-2px}
+.wcl-library-hero{isolation:isolate;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;width:100%;height:var(--wcl-hero-height);margin:0 0 28px;padding:20px;border:1px solid var(--wcl-line,#d5dce5);border-radius:14px;background:var(--wcl-canvas,#eef0f5);color:var(--wcl-ink,#293e50);cursor:pointer;box-shadow:0 1px 2px #26354a0a;text-align:center}
+.wcl-library-hero-image{position:absolute;z-index:-2;inset:0;background-size:cover;background-position:left top;transition:transform .65s cubic-bezier(.2,.65,.25,1)}
+.wcl-library-hero::after{content:'';position:absolute;z-index:-1;inset:0;background:color-mix(in srgb,var(--wcl-surface,#f6f8fb) 38%,transparent);transition:background .35s}
+.wcl-library-hero-label{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:20px;min-height:54px;padding:10px 14px 10px 24px;border:1px solid var(--wcl-hover,#40566e);border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--wcl-accent,#52677e) 90%,white),var(--wcl-accent,#52677e));color:#fff;box-shadow:0 4px 20px color-mix(in srgb,var(--wcl-accent,#52677e) 20%,transparent),inset 0 1px 0 #ffffff30;font:600 17px/1.5 sans-serif;letter-spacing:.02em;transition:background .25s,border-color .25s,box-shadow .25s,transform .25s}
+.wcl-library-hero-arrow{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#ffffff24;color:#fff;font:500 18px/1 sans-serif}
+.wcl-library-hero:hover .wcl-library-hero-image,.wcl-library-hero:focus-visible .wcl-library-hero-image{transform:scale(1.045)}
+.wcl-library-hero:hover::after,.wcl-library-hero:focus-visible::after{background:color-mix(in srgb,var(--wcl-surface,#f6f8fb) 24%,transparent)}
+.wcl-library-hero:is(:hover,:focus-visible) .wcl-library-hero-label{background:linear-gradient(135deg,var(--wcl-accent,#52677e),var(--wcl-hover,#40566e));border-color:var(--wcl-hover,#40566e);box-shadow:0 6px 24px color-mix(in srgb,var(--wcl-accent,#52677e) 30%,transparent),inset 0 1px 0 #ffffff30;transform:translateY(-1px)}
+.wcl-library-hero:focus-visible{outline:3px solid var(--wcl-accent,#52677e);outline-offset:4px}
+.wcl-library-hero:disabled{cursor:wait}
+@media(max-width:767px){#UserTopInfo:has(#NewestInformations){gap:8px}#UserTopInfo:has(#NewestInformations)>.page-header{max-width:96px;padding-inline:10px!important;font-size:12px}#UserTopInfo #NewestInformations{gap:8px}.wcl-library-hero{border-radius:12px}.wcl-library-hero-label{min-height:50px;padding:8px 10px 8px 18px;gap:16px;font-size:16px}}
+@media(prefers-reduced-motion:reduce){.wcl-library-hero-image,.wcl-library-hero::after,.wcl-library-hero-label{transition:none}.wcl-library-hero:hover .wcl-library-hero-image,.wcl-library-hero:focus-visible .wcl-library-hero-image,.wcl-library-hero:is(:hover,:focus-visible) .wcl-library-hero-label{transform:none}}
+/* Keep the native header dimensions and navigation/dropdown behavior. */
+html[data-wcl-theme]:not([data-wcl-theme="default"]) .navbar.navbar-default {
+  background:var(--wcl-gradient,linear-gradient(115deg,#182432 0%,#304453 52%,#202a36 100%))!important;
+  border-color:var(--wcl-border,#3e5261)!important;
+}
+html[data-wcl-theme]:not([data-wcl-theme="default"]) .navbar-default :is(.navbar-brand,.course-name,.course-webclass,.navbar-nav>li>a) { color:var(--wcl-text)!important; }
+html[data-wcl-theme]:not([data-wcl-theme="default"]) .navbar-default :is(.navbar-nav>.active>a,.navbar-nav>.open>a,.navbar-nav>li>a:hover,.navbar-nav>li>a:focus) { background:var(--wcl-soft)!important;color:var(--wcl-ink)!important; }
+html[data-wcl-theme]:not([data-wcl-theme="default"]) .navbar-default .navbar-collapse { border-color:var(--wcl-border)!important; }
+
+/* Preserve the photograph: only a gentle bottom/edge gradient is global.
+   Crisp layered text shadows provide local contrast like wallpaper labels. */
+html[data-wcl-banner][data-wcl-theme] .navbar.navbar-default{--wcl-text:#fff;background:linear-gradient(0deg,#0006 0%,#0000 75%),linear-gradient(90deg,#0002 0%,#0000 75%),var(--wcl-banner-image) center/cover no-repeat!important;border-color:#ffffff50!important}
+html[data-wcl-banner][data-wcl-theme] .navbar-default :is(.navbar-brand,.course-name,.course-webclass,.navbar-nav>li>a,.wcl-copy-code,.wcl-library-button){color:#fff!important;text-shadow:0 1px 2px #000e,0 0 4px #000c,0 0 12px #0009!important}
+html[data-wcl-banner] .navbar-default :is(.wcl-theme-toggle svg,.wcl-copy-code svg){filter:drop-shadow(0 1px 2px #000c)}
+html[data-wcl-banner] .navbar-default .wcl-library-button{background-color:#0002;box-shadow:0 1px 3px #0004}
+html[data-wcl-banner][data-wcl-theme] .navbar-default :is(.navbar-nav>.active>a,.navbar-nav>.open>a,.navbar-nav>li>a:hover,.navbar-nav>li>a:focus){background:#0006!important;color:#fff!important}
+html[data-wcl-banner] .navbar-default .navbar-toggle .icon-bar{background-color:#fff!important}
+html[data-wcl-banner] .navbar-default .navbar-collapse{border-color:#ffffff50!important}
+
+/* Blur only the account name, leaving the avatar and menu hit area intact. */
+.navbar a[title="アカウントメニュー"]>span,
+.wcl-private-name { filter:blur(5px);transition:filter .16s ease-out; }
+.navbar a[title="アカウントメニュー"]:hover>span,
+.navbar a[title="アカウントメニュー"]:focus-visible>span,
+.wcl-private-name:hover,
+.wcl-private-name:focus-within { filter:none; }
+
+/* Vue applies fixed positioning inline while scrolling; keep the toolbar in flow. */
+.timeline-action>div:first-child {
+  position:static!important;
+  inset:auto!important;
+  transform:none!important;
+  width:100%!important;
+}
+
+/* Only the introduction form, never the answer/quiz submission controls. */
+form:has(#ContentInfo) input:is([type="submit"],[type="button"]),
+form:has(#ContentInfo) button {
+  box-sizing:border-box!important;
+  min-width:min(144px,100%)!important;
+  max-width:100%!important;
+  min-height:48px!important;
+  height:auto!important;
+  padding:12px 28px!important;
+  margin:8px 6px!important;
+  border:1px solid #aaa!important;
+  border-bottom-color:#8c8c8c!important;
+  border-radius:4px!important;
+  background:linear-gradient(#fff,#e6e6e6)!important;
+  box-shadow:inset 0 1px 0 #fff,0 1px 2px #0002;
+  color:#333!important;
+  font:600 16px/1.4 system-ui,sans-serif!important;
+  cursor:pointer;
+}
+form:has(#ContentInfo) :is(input,button)[name="next"] {
+  background:linear-gradient(#4386be,#28689e)!important;border-color:#245580!important;color:#fff!important;
+  box-shadow:inset 0 1px 0 #ffffff40,0 1px 2px #0003;text-shadow:0 -1px #0003;
+}
+form:has(#ContentInfo) :is(input,button):hover { border-color:#777!important;box-shadow:inset 0 1px 0 #fff,0 2px 4px #0003; }
+form:has(#ContentInfo) :is(input,button)[name="next"]:hover{background:linear-gradient(#337ab7,#245580)!important;border-color:#1b4363!important;box-shadow:inset 0 1px 0 #ffffff30,0 2px 4px #0003}
+form:has(#ContentInfo) :is(input,button):active{box-shadow:inset 0 2px 4px #0004!important}
+form:has(#ContentInfo) :is(input,button):focus-visible { outline:3px solid #b7791f!important;outline-offset:3px; }
+form:has(#ContentInfo) :is(input,button):disabled { opacity:.55;cursor:default; }
+
+/* Keep the spacer inside the content cell of WebClass's full-height layout
+   table. Body padding sits outside that table and can be clipped by the frame. */
+.wcl-intro-actions{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;min-height:64px;margin:16px auto;max-width:100%;padding-bottom:clamp(112px,16vh,176px)}
+form:has(#ContentInfo) .wcl-intro-actions :is(input,button){display:inline-flex!important;float:none!important;position:static!important;flex:0 1 144px;width:144px!important;min-width:min(144px,100%)!important;margin:0!important;vertical-align:middle!important}
+.wcl-intro-spacer{display:none!important}
+@media(max-width:360px){form:has(#ContentInfo) .wcl-intro-actions :is(input,button){flex-basis:128px;width:128px!important;min-width:0!important;padding-inline:16px!important}}
+
+.navbar:has(a[title="アカウントメニュー"]) li:has(>a[href*="logout.php"]):not(.wcl-account-logout),.wcl-logout-duplicate{display:none!important}
+.wcl-account-logout{border-top:1px solid #dce2e8;margin-top:6px;padding-top:6px}
+.navbar .wcl-account-menu .wcl-account-logout>a{display:block;padding:10px 20px;color:#97352f;text-decoration:none;white-space:nowrap}
+.navbar .wcl-account-menu .wcl-account-logout>a:hover,.navbar .wcl-account-menu .wcl-account-logout>a:focus{background:#fbeeed;color:#7c2823}
+.navbar .dropdown-menu{width:max-content;min-width:200px;max-width:min(520px,calc(100vw - 32px))}
+.navbar .dropdown-menu>li>a{display:block;box-sizing:border-box;min-height:44px;padding:11px 24px!important;line-height:22px;white-space:normal;word-break:normal;overflow-wrap:break-word}
+.navbar .wcl-theme-control{position:relative;display:block;float:left}
+.navbar .wcl-library-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:3px 0;padding:8px 14px;border:1px solid currentColor;border-radius:4px;background:transparent;color:var(--wcl-text,#fff);font:500 14px/20px system-ui;cursor:pointer;white-space:nowrap}
+.navbar .wcl-library-button:hover{background:#ffffff24}
+.navbar .wcl-library-button:focus-visible{outline:3px solid #b7791f;outline-offset:2px}
+.navbar .wcl-library-button:disabled{opacity:.65;cursor:wait}
+.wcl-theme-toggle{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:50px;padding:0;border:0;background:transparent;color:var(--wcl-text,#f4f6f8);cursor:pointer}
+.wcl-theme-toggle svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+.wcl-theme-toggle:hover,.wcl-theme-toggle[aria-expanded="true"]{background:#ffffff24}
+.wcl-theme-toggle:focus-visible{outline:3px solid #b7791f;outline-offset:-3px}
+.wcl-theme-menu{position:absolute;top:100%;right:0;z-index:1100;box-sizing:border-box;width:252px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 96px);overflow-y:auto;overscroll-behavior:contain;padding:6px;background:#fff;border:1px solid #cbd5df;border-radius:10px;box-shadow:0 10px 30px #1626382e;color:#243545}
+.wcl-theme-menu[hidden]{display:none!important}
+.wcl-theme-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;border:0;border-radius:6px;padding:8px 10px;background:transparent;color:#243545;font:500 14px/1.5 system-ui;cursor:pointer;text-align:left}
+.wcl-theme-menu button[data-theme]::after{content:'✓';margin-left:auto;visibility:hidden}
+.wcl-theme-menu button[aria-checked="true"]::after{visibility:visible}
+.wcl-theme-menu button:disabled{opacity:.5;cursor:default}
+.wcl-banner-separator{height:1px;margin:6px 4px;background:var(--wcl-line,#cbd5df)}
+.wcl-banner-row{display:flex;align-items:center;gap:2px}
+.wcl-theme-menu .wcl-banner-pick{flex:1;min-width:0;width:auto;gap:8px;padding-inline:8px;white-space:nowrap}
+.wcl-banner-thumbnail{display:block;flex:0 0 30px;width:30px;height:24px;border:1px solid var(--wcl-line,#cbd5df);border-radius:4px;background:linear-gradient(135deg,#fff 48%,#cbd5df 49%,#cbd5df 51%,#fff 52%) center/cover no-repeat}
+.wcl-theme-menu .wcl-banner-clear{flex:0 0 44px;width:44px;padding:0;justify-content:center;font-size:24px;font-weight:400}
+.wcl-banner-status{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);color:var(--wcl-muted,#53667c);font:400 12px/1.5 system-ui;overflow-wrap:anywhere}
+.wcl-banner-status[data-error]{position:static;width:auto;height:auto;padding:4px 8px 6px;overflow:visible;clip-path:none}
+.wcl-banner-input[hidden]{display:none!important}
+.wcl-theme-menu button:hover,.wcl-theme-menu button:focus-visible{background:#edf2f7;outline:2px solid #627e96;outline-offset:-2px}
+.wcl-theme-swatch{display:block;flex-shrink:0;width:30px;height:24px;border:1px solid #25374733;border-radius:5px}
+.wcl-today-heading{font-weight:700!important}
+.wcl-today-cell{background-color:#fff!important}
+.wcl-today-heading,.wcl-today-cell{box-shadow:inset 1px 0 color-mix(in srgb,var(--wcl-accent,#60788c) 65%,transparent),inset -1px 0 color-mix(in srgb,var(--wcl-accent,#60788c) 65%,transparent)}
+:is(table,.schedule-table) .wcl-other-day{background-color:#f0f1f2!important;filter:saturate(.45)}
+.wcl-other-day a{opacity:.9}
+:is(table,.schedule-table) .wcl-other-day-course{background-color:#fafafa!important;filter:saturate(.85)}
+.wcl-other-day-course a{opacity:1}
+.wcl-today-badge{display:inline-block;margin-left:4px;opacity:.65;font:500 10px/1.4 system-ui;vertical-align:middle;white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.navbar a[title="アカウントメニュー"]>span,.wcl-private-name{transition:none}}
+@media(max-width:767px){
+  .navbar .navbar-right.hidden-xs:has(a[title="アカウントメニュー"]){display:flex!important;align-items:center;justify-content:flex-end;float:none!important;clear:both;margin:0}
+  .wcl-theme-menu{right:auto;left:0}
+}
+
+/* Match the native home/course header rows and remove space above the home hit area. */
+.navbar.navbar-default .navbar-brand{padding-top:0!important;margin-top:0!important}
+.navbar.navbar-default .navbar-brand.wcl-home-brand{padding-top:15px!important;align-items:flex-start}
+.navbar .wcl-home-wordmark{font-size:18px!important;line-height:20px!important;text-decoration:none!important;cursor:text!important}
+@media(min-width:768px){
+  .navbar.navbar-default>.container:first-child{min-height:84px;padding-top:0!important;padding-bottom:0!important}
+  .navbar.navbar-default .navbar-brand{height:auto!important;padding-bottom:0!important;line-height:28px}
+  .navbar.navbar-default .navbar-brand:not(:has(.course-name)){display:flex;align-items:center;min-height:44px}
+  .navbar.navbar-default .navbar-header{padding-top:0!important;margin-top:0!important}
+}
+
+/* Answer actions retain WebClass's native colors and handlers in every theme.
+   Change only the hit area; never replace or move submission controls. */
+:is(form[name="answer_form"] :is([name="saveanswer"],[name="grade"]),#QstnOperation :is(button,input[type="button"],input[type="submit"])){box-sizing:border-box!important;min-width:112px!important;min-height:44px!important;height:auto!important;padding:10px 18px!important;font-size:16px!important;line-height:1.4!important;cursor:pointer}
+:is(form[name="answer_form"],#QstnOperation) :is(button,input[type="button"],input[type="submit"]):focus-visible{outline:2px solid #59626c!important;outline-offset:2px}
+:is(form[name="answer_form"],#QstnOperation) :is(button,input[type="button"],input[type="submit"]):disabled{cursor:default}
+
+/* Semantic layers: canvas belongs to the page, transparent layout containers
+   reveal it, and only actual cards/fields get the tinted surface palette.
+   The scope boundary also keeps ALL theme rules off native answer actions. */
+@scope (html[data-wcl-theme]:not([data-wcl-theme="default"])) to (:is(form[name="answer_form"],#QstnOperation) :is(button,input[type="button"],input[type="submit"])) {
+  body{color:var(--wcl-ink)!important;background-color:var(--wcl-canvas)!important}
+  a:not(.btn):not(.navbar a):not(.wcl-attachments a):not(.wcl-course-bottom-home){color:var(--wcl-link)!important;text-decoration:underline}
+  a:not(.btn):not(.navbar a):not(.wcl-attachments a):hover{color:var(--wcl-hover)!important}
+  :is(.cm-contentsList,.wcl-course-layout,.courseList,.courseTree){background:transparent!important;color:var(--wcl-ink)!important}
+  :is(.panel,.list-group-item,.timeline-message,.timeline-post-form,.modal-content,.dropdown-menu,#ContentInfo,.wcl-theme-menu,.wcl-course-card){background-color:var(--wcl-surface)!important;color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  :is(.panel-default>.panel-heading,.schedule-table thead td,.schedule-table thead th,.schedule-table-class_order,.list-group-label-item,.courseTree-levelTitle,.cl-contentsList_folder){background-color:var(--wcl-heading)!important;color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  :is(.schedule-table,.schedule-list) :is(td,th){border-color:var(--wcl-line)!important}
+  :is(.schedule-table,.schedule-list) td{background-color:var(--wcl-surface)!important}
+  .wcl-today-cell{background-color:var(--wcl-surface)!important}
+  :is(table,.schedule-table) .wcl-other-day{background-color:var(--wcl-heading)!important}
+  :is(table,.schedule-table) .wcl-other-day-course{background-color:var(--wcl-soft)!important}
+  .alert-info{background-color:var(--wcl-soft)!important;border-color:var(--wcl-line)!important;color:var(--wcl-ink)!important}
+  #NewestInformations .info-list li.head.bgc_main,.badge{background-color:var(--wcl-accent)!important;color:#fff!important}
+  :is(#WsTitle,.bgc_sub){background-color:var(--wcl-heading)!important;color:var(--wcl-ink)!important}
+  /* Legacy frames set white text on h1 itself; changing only its parent leaves
+     white-on-pale titles. Pair the title background with explicit foregrounds. */
+  #WsTitle :is(h1,h2,a){color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  #WsTitle a:hover,#WsTitle a:focus-visible{color:var(--wcl-hover)!important}
+  table.layouter td.navi{background-color:var(--wcl-soft)!important;color:var(--wcl-ink)!important}
+  #ContentInfo :is(th,td){border-color:var(--wcl-line)!important}
+  #ContentInfo th{background-color:var(--wcl-heading)!important;color:var(--wcl-ink)!important}
+  #ContentInfo td{background-color:var(--wcl-surface)!important;color:var(--wcl-ink)!important}
+  /* The Vue search UI uses its own bg-white and text-gray utility classes. */
+  #search-app [role="search"]{background-color:var(--wcl-surface)!important;color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  #search-app :is(input,button,svg){color:var(--wcl-ink)!important}
+  #search-app input{background-color:transparent!important}
+  #search-app input::placeholder{color:var(--wcl-muted)!important;opacity:1}
+  .wcl-course-card.wcl-openable:hover{background-color:var(--wcl-soft)!important}
+  .wcl-course-card.wcl-unavailable{background-color:var(--wcl-heading)!important;color:var(--wcl-muted)!important}
+  .timeline-message-author,.wcl-account-logout{border-color:var(--wcl-line)!important}
+  .btn-primary{background:var(--wcl-accent)!important;border-color:var(--wcl-hover)!important;color:#fff!important}
+  .btn-primary:hover,.btn-primary:focus{background:var(--wcl-hover)!important}
+  :is(.btn-default,.wcl-course-bottom-home,.timeline-action button,.timeline-post-form button){background:var(--wcl-surface)!important;color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  :is(.btn-default,.wcl-course-bottom-home,.timeline-action button,.timeline-post-form button):hover{background:var(--wcl-soft)!important;border-color:var(--wcl-accent)!important}
+  :is(input:not([type="button"]):not([type="submit"]),textarea,select){accent-color:var(--wcl-accent);color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  :is(input:not([type]),input[type="text"],input[type="search"],textarea,select){background-color:var(--wcl-surface)!important}
+  :is(.qstnoptions .hint,.blue_moji){color:var(--wcl-link)!important}
+  :is(.dropdown-menu>li>a,.wcl-theme-menu button){color:var(--wcl-ink)!important}
+  :is(.dropdown-menu>li>a:hover,.dropdown-menu>li>a:focus,.wcl-theme-menu button:hover,.wcl-theme-menu button:focus-visible,.wcl-theme-menu button[aria-checked="true"]){background:var(--wcl-soft)!important;color:var(--wcl-accent)!important}
+  .wcl-theme-menu button:focus-visible{outline-color:var(--wcl-accent)}
+  :is(.wcl-library-button,.wcl-theme-toggle,.wcl-copy-code):hover{background:color-mix(in srgb,var(--wcl-text) 15%,transparent)!important}
+  :is(.wcl-library-button,.wcl-theme-toggle,.wcl-course-card,a.course-webclass,.wcl-copy-code,.wcl-course-bottom-home):focus-visible{outline-color:var(--wcl-accent)!important}
+  form:has(#ContentInfo) :is(input[type="submit"],input[type="button"],button){background:var(--wcl-surface)!important;color:var(--wcl-ink)!important;border-color:var(--wcl-line)!important}
+  form:has(#ContentInfo) :is(input,button)[name="next"]{background:var(--wcl-accent)!important;color:#fff!important;border-color:var(--wcl-hover)!important}
+  form:has(#ContentInfo) :is(input,button):hover{background:var(--wcl-soft)!important;border-color:var(--wcl-accent)!important}
+  form:has(#ContentInfo) :is(input,button)[name="next"]:hover{background:var(--wcl-hover)!important}
+  form:has(#ContentInfo) :is(input,button):focus-visible{outline-color:var(--wcl-accent)!important}
+  #webclass-save-notice button{background:var(--wcl-accent);color:#fff;border:1px solid var(--wcl-hover);border-radius:6px;padding:6px 12px;cursor:pointer}
+  #webclass-save-notice button:hover{background:var(--wcl-hover)}
+  #webclass-save-notice button:focus-visible{outline:2px solid var(--wcl-accent);outline-offset:2px}
+}

@@ -5,13 +5,39 @@ const session = {};
 const saved = { enabled:true, root:'WebClass', site:'https://example.edu/webclass/', selector:'' };
 let overrides = {};
 globalThis.chrome = {
+  action:{onClicked:event()},
+  contextMenus:{onClicked:event(),removeAll:async()=>{},create:value=>{session.actionMenu=value;}},
   storage:{ local:{get:async()=>({settings:saved,courseOverrides:overrides})}, session:{get:async()=>structuredClone(session),set:async v=>Object.assign(session,structuredClone(v)),clear:async()=>{delete session.intents;}},onChanged:event() },
-  runtime:{id:'test-extension',getURL:path=>'chrome-extension://test-extension/'+path,onInstalled:event(),onStartup:event(),onMessage:event()},
-  scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async()=>{},insertCSS:async()=>{}},
+  runtime:{id:'test-extension',getURL:path=>'chrome-extension://test-extension/'+path,getContexts:async()=>[{contextType:'OFFSCREEN_DOCUMENT'}],sendMessage:async value=>{session.runtimeMessage=value;return value.type==='preview-job'?{ok:true,url:'blob:preview',token:'preview-token'}:{accepted:true};},onInstalled:event(),onStartup:event(),onMessage:event()},
+  offscreen:{createDocument:async()=>{}},
+  scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async()=>{},removeCSS:async()=>{},insertCSS:async()=>{}},
   permissions:{contains:async()=>true,onRemoved:event(),onAdded:event(),addHostAccessRequest:async()=>{}},
-  tabs:{onRemoved:event(),onUpdated:event(),query:async()=>[],sendMessage:async()=>null,create:async value=>{ session.createdTab=value; }}, downloads:{onDeterminingFilename:event(),onChanged:event(),show:id=>{ session.shownDownload = id; },search:async()=>[]}
+  tabs:{onRemoved:event(),onUpdated:event(),query:async()=>[],sendMessage:async()=>null,create:async value=>{ session.createdTab=value; return {id:99,...value}; }}, downloads:{onDeterminingFilename:event(),onChanged:event(),show:id=>{ session.shownDownload = id; },search:async()=>[]}
 };
 const { resolveCourse, requestForTab, matchesDownloadPath } = await import('../background.js');
+test('startup reapplies typography to existing origin-wide windows at USER priority', async()=>{
+  const originalQuery=chrome.tabs.query, originalInsert=chrome.scripting.insertCSS;
+  const calls=[];
+  chrome.tabs.query=async filter=>{
+    assert.equal(filter.url,'https://example.edu/*');
+    return [{id:7,url:'https://example.edu/legacy-messages.php'}];
+  };
+  chrome.scripting.insertCSS=async options=>calls.push(options);
+  try {
+    await chrome.runtime.onStartup.listeners[0]();
+    assert.deepEqual(calls,[{target:{tabId:7,allFrames:true},files:['typography.css'],origin:'USER'}]);
+  } finally {
+    chrome.tabs.query=originalQuery;
+    chrome.scripting.insertCSS=originalInsert;
+  }
+});
+
+test('toolbar opens SAML entry and the action context menu opens the library', async()=>{
+  chrome.action.onClicked.listeners[0]();
+  assert.equal(session.createdTab.url,'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML');
+  chrome.contextMenus.onClicked.listeners[0]({menuItemId:'webclass-open-library'});
+  assert.equal(session.createdTab.url,'chrome-extension://test-extension/library.html');
+});
 const sender = { id:'test-extension',tab:{id:1},url:'https://example.edu/webclass/course?id=1' };
 function intent() { return new Promise(resolve=>chrome.runtime.onMessage.listeners[0]({type:'intent',course:{name:'数学'},target:'https://example.edu/download/1'},sender,resolve)); }
 function download(overrides={}) {
@@ -105,4 +131,27 @@ test('duplicate download paths are matched safely and request an explicit re-dow
   assert.deepEqual(await call({type:'browser-check',jobId:'job2',path:'数学/資料.pdf'},internal),{duplicate:true});
   assert.equal(session.jobs.job2,undefined);
   assert.equal(sent.at(-1)[1].canRedownload,true);
+});
+test('bulk downloads are scoped to the active material using Chrome-provided frame URLs', async () => {
+  const call = (value, from) => new Promise(resolve => chrome.runtime.onMessage.listeners[0](value, from, resolve));
+  const chapter = 'https://example.edu/webclass/txtbk_show_chapter.php?contents_id=math1';
+  const top = 'https://example.edu/webclass/txtbk_frame.php?set_contents_id=math1';
+  const from = { ...sender, url: chapter, tab: { id: 1, url: top }, frameId: 2 };
+  const context = { course: { name: '数学', id: '26math', source: '#WsTitle h1' }, courseId: '26math', materialName: '第1回' };
+  const accepted = await call({ type: 'bulk-download', context, resources: [{kind:'pdf',url:'https://example.edu/webclass/text/26/26math/mock/chapter.pdf',name:'第1章.pdf'},{kind:'pdf',url:'https://example.edu/webclass/text/26/other/mock/chapter.pdf',name:'別講義.pdf'}], materials: [{ url: 'https://outside.test/material' }] }, from);
+  assert.equal(accepted.ok, true);
+  assert.equal(session.runtimeMessage.job.materialId, 'math1');
+  assert.deepEqual(session.runtimeMessage.job.resources.map(item => item.name), ['第1章.pdf']);
+  assert.deepEqual(session.runtimeMessage.job.materials.map(item => item.url), [chapter, top]);
+  await call({ type: 'bulk-download', context }, { ...from, tab: { id: 1, url: top.replace('math1', 'other') } });
+  assert.deepEqual(session.runtimeMessage.job.materials.map(item => item.url), [chapter]);
+  assert.equal((await call({ type: 'bulk-download', context }, { ...from, url: 'https://example.edu/webclass/course.php/26math/' })).ok, false);
+});
+test('submission preview accepts safe same-site files and opens the returned blob tab', async () => {
+  const call = value => new Promise(resolve => chrome.runtime.onMessage.listeners[0](value, sender, resolve));
+  assert.equal((await call({ type: 'preview-submission', url: 'https://example.edu/webclass/download.php/report.txt', name: 'report.txt', kind: 'file' })).ok, true);
+  assert.equal(session.runtimeMessage.type, 'preview-job');
+  assert.equal(session.createdTab.url, 'blob:preview');
+  assert.equal((await call({ type: 'preview-submission', url: 'https://example.edu/webclass/download.php/report.docx', name: 'report.docx', kind: 'file' })).ok, false);
+  assert.equal((await call({ type: 'preview-submission', url: 'https://outside.test/report.pdf', name: 'report.pdf', kind: 'file' })).ok, false);
 });

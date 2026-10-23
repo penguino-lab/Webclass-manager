@@ -6,6 +6,7 @@ import { createDemoServer } from './demo-server.js';
 import { checkLibrary } from './library-browser.mjs';
 import { checkMaterialVariants } from './material-browser.mjs';
 import { checkCourse } from './course-browser.mjs';
+import { checkPageUI } from './page-ui-browser.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
 const source = resolve(import.meta.dirname, '..');
@@ -16,9 +17,11 @@ await mkdir(join(sandbox, 'profile', 'Default'), { recursive: true });
 await mkdir(join(sandbox, 'downloads'));
 await writeFile(join(sandbox, 'profile', 'Default', 'Preferences'), JSON.stringify({ download: { default_directory: join(sandbox, 'downloads'), prompt_for_download: false } }));
 const extension = join(sandbox, 'extension'); await mkdir(extension);
-const files = ['background.js', 'content.js', 'material-ui.js', 'course-ui.js', 'course-ui.css', 'core.js', 'webclass-adapter.js', 'directory-store.js', 'save-file.js', 'attachment-link.js', 'offscreen.html', 'offscreen.js', 'popup.html', 'popup.js', 'style.css', 'library.html', 'library.css', 'library.js', 'library-core.js', 'library-open.js', 'library-store.js', 'library-thumbnails.js', 'library-thumbnail-cache.js'];
+const files = ['background.js', 'content.js', 'material-ui.js', 'course-ui.js', 'course-ui.css', 'core.js', 'resource-tools.js', 'webclass-adapter.js', 'directory-store.js', 'save-file.js', 'attachment-link.js', 'offscreen.html', 'offscreen.js', 'popup.html', 'popup.js', 'style.css', 'library.html', 'library.css', 'library.js', 'library-core.js', 'library-open.js', 'library-store.js', 'library-thumbnails.js', 'library-thumbnail-cache.js'];
+files.push('typography.css','page-ui.css','page-themes.js','banner-crop.js','page-ui.js','theme-sync.js','extension-theme.css');
 for (const file of files) await copyFile(join(source, file), join(extension, file));
 await cp(join(source, 'vendor'), join(extension, 'vendor'), { recursive: true });
+await cp(join(source, 'icons'), join(extension, 'icons'), { recursive: true });
 const manifest = JSON.parse(await readFile(join(source, 'manifest.json'), 'utf8'));
 // Fixture only: grant the dummy localhost site; never use a university account/profile.
 manifest.host_permissions = ['http://127.0.0.1/*'];
@@ -43,6 +46,25 @@ try {
   const errors = [];
   options.on('pageerror', error => errors.push(String(error)));
   await options.goto(`chrome-extension://${id}/library.html`);
+  const iconDefinitions = await worker.evaluate(() => {
+    const manifest = chrome.runtime.getManifest();
+    return { icons:manifest.icons, action:manifest.action.default_icon };
+  });
+  assert.deepEqual(iconDefinitions.icons, iconDefinitions.action, 'extension and toolbar use the same artwork');
+  for (const [size, path] of Object.entries(iconDefinitions.icons)) {
+    const dimensions = await options.evaluate(async path => {
+      const response = await fetch(chrome.runtime.getURL(path));
+      const bitmap = await createImageBitmap(await response.blob());
+      const dimensions = [bitmap.width, bitmap.height]; bitmap.close(); return dimensions;
+    }, path);
+    assert.deepEqual(dimensions, [Number(size), Number(size)], 'each manifest PNG loads at its declared size');
+  }
+  await options.locator('.brand-mark').evaluate(img => img.decode());
+  assert.equal(await options.locator('.brand-mark').evaluate(img => img.naturalWidth), 128);
+  const brandBox = await options.locator('.brand-mark').boundingBox();
+  assert.equal(brandBox.width, 42); assert.equal(brandBox.height, 42);
+  assert.deepEqual(await options.locator('link[rel="icon"]').evaluateAll(links => links.map(link => link.getAttribute('href'))), ['icons/icon-16.png','icons/icon-32.png']);
+  console.log('PASS: custom toolbar/extension PNGs load at all declared sizes; library brand and favicons use the same artwork');
   const cdp = await context.newCDPSession(options);
   await cdp.send('Browser.setDownloadBehavior', { behavior: 'default', eventsEnabled: true });
   await options.locator('#sidebar-settings').click();
@@ -58,6 +80,11 @@ try {
   const early = registered.find(script => script.id === 'webclass-course-ui');
   assert.equal(early.runAt, 'document_start'); assert.deepEqual(early.css, ['course-ui.css']);
   assert.deepEqual(early.js, ['course-ui.js']);
+  const shared = registered.find(script => script.id === 'webclass-page-ui');
+  assert.equal(shared.runAt, 'document_start'); assert.equal(shared.allFrames, true);
+  assert.deepEqual(shared.css, ['page-ui.css']); assert.deepEqual(shared.matches, [site + '*']);
+  assert.deepEqual(shared.js, ['page-themes.js','banner-crop.js','page-ui.js']);
+  await checkPageUI(context, site, artifacts, worker);
   await checkCourse(context, site, artifacts);
   assert.equal(await options.locator('#selector').count(), 0);
   await options.screenshot({ path: join(artifacts, 'library-settings-initial.png'), fullPage: true });
@@ -128,6 +155,8 @@ try {
     throw Error('save result timed out');
   };
   assert.equal((await waitResult('saved')).path, '数学/第4回_添付資料.pdf');
+  assert.deepEqual(await chapter().locator('#webclass-save-notice button').allInnerTexts(), ['開く', '閉じる']);
+  await chapter().locator('#webclass-save-notice').waitFor({ state: 'detached', timeout: 5000 });
   const attachment = await worker.evaluate(() => chrome.downloads.search({ limit: 1, orderBy: ['-startTime'] }));
   assert.equal(attachment[0].state, 'complete');
   assert.ok(attachment[0].filename.endsWith('第4回_添付資料.pdf'));
@@ -144,8 +173,8 @@ try {
   await viewer().locator('#downloadButton').click(); await waitResult('saved');
   await worker.evaluate(() => chrome.storage.session.remove('lastResult'));
   await viewer().locator('#downloadButton').click(); assert.equal((await waitResult('duplicate')).code, 'duplicate');
-  assert.equal(await viewer().locator('#webclass-save-notice button').innerText(), '再ダウンロードする');
-  await viewer().locator('#webclass-save-notice button').click(); await waitResult('saved');
+  assert.deepEqual(await viewer().locator('#webclass-save-notice button').allInnerTexts(), ['再ダウンロードする', '開く', '閉じる']);
+  await viewer().locator('#webclass-save-notice button').first().click(); await waitResult('saved');
   const stored = await options.evaluate(async () => {
     const root = await navigator.storage.getDirectory(), folder = await root.getDirectoryHandle('数学');
     const values = [];
@@ -165,7 +194,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   assert.equal(failed.code, 'save-failed'); assert.match(failed.error, /保存先.*書き込み/);
-  assert.equal(await viewer().locator('#webclass-save-notice button').first().textContent(), '元の操作を使う');
+  assert.deepEqual(await viewer().locator('#webclass-save-notice button').allInnerTexts(), ['開く', '閉じる']);
   // Re-selecting a folder restores the same handle and allows later saves.
   await options.locator('#settings-choose-folder').click();
   await options.waitForFunction(() => document.getElementById('settings-folder-status').textContent === '保存先を変更しました。');

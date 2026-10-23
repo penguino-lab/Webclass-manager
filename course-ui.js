@@ -94,7 +94,12 @@
       button.addEventListener('click', () => copyCode(button, label, code)); title.after(button);
     }
     const home = document.querySelector('a.course-webclass');
-    if (home) { setText(home, 'WebClass'); home.classList.add('wcl-course-home'); home.setAttribute('aria-label', 'WebClass ホームに戻る'); }
+    if (home) {
+      if (!home.querySelector('.wcl-course-home-label')) {
+        const label = document.createElement('span'); label.className = 'wcl-course-home-label'; label.textContent = 'WebClass'; home.replaceChildren(label);
+      }
+      home.classList.add('wcl-course-home'); home.setAttribute('aria-label', 'WebClass ホームに戻る');
+    }
     return home;
   }
   function loadingSkeleton() {

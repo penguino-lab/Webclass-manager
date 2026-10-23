@@ -36,7 +36,7 @@
 | 資料ライブラリ・設定 | `library.html`、`library.js`、`library.css`、`library-*.js` |
 | 検証 | `tests/`、`.github/workflows/test.yml` |
 
-`popup.html`・`popup.js` は残っていますが、現行manifestでは通常クリックのポップアップには指定していません。通常クリックは `background.js` の固定SAMLログイン先を開きます。
+`popup.html`・`popup.js` は残っていますが、現行manifestでは通常クリックのポップアップには指定していません。通常クリックは未許可のWebClassでは初回案内を開き、それ以外では設定済みの大学のURLを開きます。TCUの初期値ではSAML入口を使います。初回導入は `site-discovery.js`・`site-onboarding.js`・`onboarding.*` が担当します。
 
 ## 自動テスト
 
@@ -59,9 +59,12 @@ node tests/browser-check.mjs
 node tests/theme-browser.mjs
 node tests/banner-browser.mjs
 node tests/home-ui-browser.mjs
+node tests/onboarding-browser.mjs
 ```
 
 総合テストは添付・PDF保存、重複・再ダウンロード、講義別整理、ライブラリ検索・プレビュー等を確認します。テーマ専用テストは配色と同期、バナー専用テストはヘッダー画像の切り取りと保持、ホーム専用テストはライブラリバナーとお知らせティッカーを確認します。
+
+初回導入専用テストは、事前のホスト権限がないプロファイルでの検出と案内・拒否、ユーザー操作内での権限要求、許可済みのテスト用プロファイルでのURL登録と実際の画面適用を確認します。Chromeのネイティブな許可ダイアログの承認操作自体は手動確認が必要です。
 
 既存のPlaywrightやChromiumを使う場合は `PLAYWRIGHT_MODULE_PATH` と `PLAYWRIGHT_EXECUTABLE_PATH` を指定できます。出力はリポジトリに隣接する `tmp/` 以下です。
 

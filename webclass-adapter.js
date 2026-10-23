@@ -108,6 +108,20 @@
       } catch {}
       return null;
     },
+    submissionPreviewAction(event, doc) {
+      if (event.type !== 'click' || event.button !== 0 || event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return null;
+      const link = event.target.closest?.('a[href]'); if (!link) return null;
+      const pageText = clean([doc.title, doc.querySelector('h1,h2')?.textContent, link.closest('tr,li,article,section,div')?.textContent].join(' '));
+      const pageURL = String(doc.URL || '');
+      if (!/(?:マイレポート|成績|提出済|提出物|提出ファイル|report|grade|score)/i.test(pageText + ' ' + pageURL)) return null;
+      try {
+        const url = new URL(link.href, doc.baseURI), page = new URL(doc.URL);
+        if (url.origin !== page.origin || !/\/(?:file_down|download)\.php(?:\/|$)/.test(url.pathname)) return null;
+        const name = clean(link.getAttribute('download') || url.searchParams.get('file_name') || link.textContent || decodeURIComponent(url.pathname.split('/').pop()));
+        if (!/\.(?:pdf|png|jpe?g|gif|webp|avif|bmp|txt|text|md|csv|tsv|log|json|xml|html?|js|css|svg)$/i.test(name)) return null;
+        return { url: url.href, name, kind: /\/file_down\.php$/.test(url.pathname) ? 'attachment' : 'file' };
+      } catch { return null; }
+    },
     downloadTarget(event, doc) {
       const a = event.target.closest?.('a[href]');
       if (!a) return null;

@@ -1,0 +1,26 @@
+/* Loaded after each extension page's base styles; default retains its own UI. */
+@scope (html[data-wcl-theme]:not([data-wcl-theme="default"])) {
+  :scope{--accent:var(--wcl-accent);--line:var(--wcl-line);--muted:var(--wcl-muted);background:var(--wcl-canvas);color:var(--wcl-ink)}
+  body{background:var(--wcl-canvas);color:var(--wcl-ink)}
+  :is(main.popup,.sidebar,.details,.entry,select,.setting-url-row input,.type-chip){background:var(--wcl-surface);color:var(--wcl-ink);border-color:var(--wcl-line)}
+  .topbar{background:var(--wcl-gradient);color:var(--wcl-text);border-color:var(--wcl-border)}
+  .search-wrap{background:var(--wcl-surface);border-color:var(--wcl-line);color:var(--wcl-ink)}
+  :is(input,select){color:var(--wcl-ink);accent-color:var(--wcl-accent)}
+  :is(input,select)::placeholder{color:var(--wcl-muted)}
+  :is(button.primary,.popup button){background:var(--wcl-accent);color:#fff}
+  :is(button.primary,.popup button):hover:enabled{background:var(--wcl-hover)}
+  :is(button.quiet,.popup button.secondary){background:var(--wcl-soft);color:var(--wcl-ink)}
+  :is(button.quiet,.popup button.secondary):hover:enabled{background:var(--wcl-heading)}
+  :is(.nav,.tree-button,#breadcrumbs button,#clear-types,.switch-text,.empty h2,#type-label){color:var(--wcl-ink)}
+  :is(.nav.active,.tree-button.active,.type-chip[aria-pressed=true],.view-buttons button[aria-pressed=true],.type-pill){background:var(--wcl-soft);color:var(--wcl-accent);border-color:var(--wcl-accent)}
+  :is(.nav:hover,.tree-button:hover,.type-chip:hover){background:var(--wcl-soft);border-color:var(--wcl-accent)}
+  :is(.type-chip[aria-pressed=true] .chip-mark::after,.entry-star,.tree-symbol){color:var(--wcl-accent)}
+  :is(.entry-star,.folder-count){background:var(--wcl-surface);color:var(--wcl-accent)}
+  .entry-star:hover{background:var(--wcl-soft)}
+  :is(#permission,.type-pill){background:var(--wcl-soft);border-color:var(--wcl-line)}
+  :is(.section-label,.entry-meta,.hint,.eyebrow,#status,#detail-empty,.course-suffix,footer,.setting-help,.setting-message){color:var(--wcl-muted)}
+  :is(#breadcrumbs button:last-child,.empty h2){color:var(--wcl-ink)}
+  :is(.setting-row,.popup section){border-color:var(--wcl-line)}
+  :is(.entry-art:has(canvas.thumbnail),#detail-preview){background:var(--wcl-heading)}
+  :is(button,a,input,select):focus-visible{outline-color:var(--wcl-accent)}
+}

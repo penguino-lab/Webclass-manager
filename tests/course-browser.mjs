@@ -24,12 +24,13 @@ export async function checkCourse(context, site, artifacts) {
     assert.equal(await page.locator('.course-webclass').textContent(), 'WebClass');
     assert.equal(await page.locator('.course-webclass .glyphicon-home').count(), 0);
     const homeText = await page.locator('.course-webclass').evaluate(el => { const range=document.createRange();range.selectNodeContents(el);const r=range.getBoundingClientRect();return {left:r.left,right:r.right}; });
-    assert.ok(Math.abs(homeText.left-home.x-24)<1 && Math.abs(home.x+home.width-homeText.right-24)<1, 'home hit area extends equally on both sides of left-aligned text');
+    assert.ok(homeText.left-home.x>=24 && Math.abs((homeText.left-home.x)-(home.x+home.width-homeText.right))<1, 'smaller text stays centered within the unchanged home hit area');
     await page.locator('.course-webclass').click({position:{x:12,y:22}});
     await page.locator('.course-webclass').click({position:{x:home.width-12,y:22}});
     assert.equal(await page.evaluate(() => window.homeClicks), 2, 'both side margins invoke the original home link');
     assert.equal(await page.locator('#wcl-course-filters').evaluate(el => getComputedStyle(el).borderRadius), '12px');
     assert.equal(await page.locator('#wcl-course-filters label').first().innerText(), '現在開ける教材だけ表示');
+    assert.equal(await page.locator('#wcl-bulk-download,#wcl-material-bulk').count(), 0, 'bulk save belongs to a material, not a course');
     assert.equal(await page.locator('#wcl-course-filters p:not(#wcl-filter-count)').count(), 0, 'no redundant search explanation');
     assert.equal(await page.locator('.wcl-course-bottom-home').evaluate(el => el.href), await page.locator('.course-webclass').evaluate(el => el.href));
     assert.equal(await page.locator('#native-top').count(), 0);

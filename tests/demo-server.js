@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { courseFixture } from './course-fixture.js';
+import { pageUIFixture, introductionFixture } from './page-ui-fixture.js';
 const courses = { '26math': '数学', '26stats': '統計学' };
 const courseFor = content => content?.startsWith('stats') ? '26stats' : '26math';
 const hash = '0123456789abcdef0123456789abcdef.pdf';
@@ -30,7 +31,11 @@ export function createDemoServer() {
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${hash}"; filename*=UTF-8''${encodeURIComponent(u.pathname.startsWith('/webclass/download.php/') ? attachmentName : hash)}` });
       res.end(pdf); return;
     }
-    if (u.pathname === '/webclass/course.php/26demo/') {
+    if (u.pathname === '/webclass/' && u.searchParams.has('ui')) {
+      body = html('WebClass UI 検証', pageUIFixture);
+    } else if (u.pathname === '/webclass/show_info.php') {
+      body = html('教材の開始案内', introductionFixture);
+    } else if (u.pathname === '/webclass/course.php/26demo/') {
       body = html('講義ページの検証', courseFixture({ staged: u.searchParams.has('staged'), empty: u.searchParams.has('empty') }));
     } else if (u.pathname === '/webclass/txtbk_frame.php') {
       body = `<!doctype html><html><head><title>${name} | WebClass</title></head><frameset rows="55,*"><frame src="/webclass/title_simple.php"><frameset cols="25%,75%"><frame name="webclass_chapter" src="/webclass/txtbk_show_chapter.php?contents_id=${content}"><frame name="webclass_content" src="/webclass/txtbk_show_text.php?contents_id=${content}"></frameset></frameset></html>`;

@@ -83,3 +83,16 @@ test('attachment button and POST form action are detected without reading inputs
   button.textContent='ログイン';
   assert.equal(adapter.downloadAction({type:'submit',target:form,submitter:button},doc),null);
 });
+test('submitted PDF, image, and text links can be previewed without intercepting Office files', () => {
+  const link = {
+    href: 'https://school.test/webclass/download.php/report.txt?file=submitted', textContent: 'report.txt',
+    getAttribute: () => '', closest: selector => selector === 'a[href]' ? link : { textContent: '提出済みファイル report.txt' }
+  };
+  const doc = { URL: 'https://school.test/webclass/report.php', baseURI: 'https://school.test/webclass/', title: 'マイレポート', querySelector: () => null };
+  const event = { type: 'click', button: 0, target: { closest: selector => selector === 'a[href]' ? link : null } };
+  assert.deepEqual(adapter.submissionPreviewAction(event, doc), { url: link.href, name: 'report.txt', kind: 'file' });
+  link.href = 'https://school.test/webclass/download.php/report.docx'; link.textContent = 'report.docx';
+  assert.equal(adapter.submissionPreviewAction(event, doc), null);
+  link.href = 'https://outside.test/report.pdf'; link.textContent = 'report.pdf';
+  assert.equal(adapter.submissionPreviewAction(event, doc), null);
+});

@@ -12,13 +12,14 @@ globalThis.chrome = {
   offscreen:{createDocument:async()=>{}},
   scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async()=>{},removeCSS:async()=>{},insertCSS:async()=>{}},
   permissions:{contains:async()=>true,onRemoved:event(),onAdded:event(),addHostAccessRequest:async()=>{}},
-  tabs:{onRemoved:event(),onUpdated:event(),query:async()=>[],sendMessage:async()=>null,create:async value=>{ session.createdTab=value; return {id:99,...value}; }}, downloads:{onDeterminingFilename:event(),onChanged:event(),show:id=>{ session.shownDownload = id; },search:async()=>[]}
+  tabs:{onRemoved:event(),onUpdated:event(),onActivated:event(),query:async()=>[],sendMessage:async()=>null,create:async value=>{ session.createdTab=value; return {id:99,...value}; }}, downloads:{onDeterminingFilename:event(),onChanged:event(),show:id=>{ session.shownDownload = id; },search:async()=>[]}
 };
 const { resolveCourse, requestForTab, matchesDownloadPath } = await import('../background.js');
 test('startup reapplies typography to existing origin-wide windows at USER priority', async()=>{
   const originalQuery=chrome.tabs.query, originalInsert=chrome.scripting.insertCSS;
   const calls=[];
   chrome.tabs.query=async filter=>{
+    if (!filter.url) return [];
     assert.equal(filter.url,'https://example.edu/*');
     return [{id:7,url:'https://example.edu/legacy-messages.php'}];
   };
@@ -32,9 +33,9 @@ test('startup reapplies typography to existing origin-wide windows at USER prior
   }
 });
 
-test('toolbar opens SAML entry and the action context menu opens the library', async()=>{
-  chrome.action.onClicked.listeners[0]();
-  assert.equal(session.createdTab.url,'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML');
+test('toolbar opens the configured university and the action context menu opens the library', async()=>{
+  await chrome.action.onClicked.listeners[0]();
+  assert.equal(session.createdTab.url,saved.site);
   chrome.contextMenus.onClicked.listeners[0]({menuItemId:'webclass-open-library'});
   assert.equal(session.createdTab.url,'chrome-extension://test-extension/library.html');
 });
@@ -81,7 +82,7 @@ test('ambiguous material IDs are rejected and site visits request access without
   await requestForTab({ id: 1, url: 'https://example.edu/webclass/course.php/26math/' });
   await requestForTab({ id: 2, url: 'https://example.edu/outside/' });
   await requestForTab({ id: 3, url: 'https://other.edu/webclass/' });
-  assert.deepEqual(requests, [{ tabId: 1, pattern: 'https://example.edu/webclass/*' }]);
+  assert.deepEqual(requests, [{ tabId: 1, pattern: 'https://example.edu/webclass/*' }, { tabId: 3, pattern: 'https://other.edu/webclass/*' }]);
   chrome.permissions.contains = async () => true;
 });
 test('about:blank frames require a Chrome-verified live URL and matching document ID', async () => {

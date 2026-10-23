@@ -1,10 +1,16 @@
 import { DEFAULTS, TTL, inSite, digest, chooseIntent, destination, filename, courseId, contentsId, usableName, hostPattern } from './core.js';
 import { previewType } from './resource-tools.js';
+import { createSiteOnboarding } from './site-onboarding.js';
 let queue = Promise.resolve(), creating;
 const previewTabs = new Map();
 const webClassLogin = 'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML';
 const libraryMenuId = 'webclass-open-library';
-chrome.action.onClicked.addListener(() => { chrome.tabs.create({url:webClassLogin}).catch(console.error); });
+const onboarding = createSiteOnboarding(chrome, { settings, activate: activateSite });
+chrome.action.onClicked.addListener(tab => serial(async () => {
+  if (tab && await onboarding.requestForTab(tab, { force: true })) return;
+  const s = await settings();
+  await chrome.tabs.create({ url: s.site === DEFAULTS.site ? webClassLogin : s.site });
+}).catch(console.error));
 chrome.contextMenus.onClicked.addListener(info => {
   if (info.menuItemId === libraryMenuId) chrome.tabs.create({url:chrome.runtime.getURL('library.html')}).catch(console.error);
 });
@@ -66,12 +72,13 @@ async function syncScripts() {
   }
 }
 export async function requestForTab(tab) {
+  return onboarding.requestForTab(tab);
+}
+async function activateSite(site) {
   const s = await settings();
-  if (!s.enabled || !inSite(tab.url, s.site)) return;
-  const origin = hostPattern(s.site);
-  if (!await chrome.permissions.contains({ origins: [origin] })) {
-    await chrome.permissions.addHostAccessRequest({ tabId: tab.id, pattern: origin.slice(0, -2) + new URL(s.site).pathname + '*' });
-  }
+  if (s.site !== site) await chrome.storage.local.set({ settings: { ...s, site } });
+  await syncScripts();
+  for (const tab of await chrome.tabs.query({})) if (inSite(tab.url, site)) await inject(tab.id);
 }
 chrome.runtime.onInstalled.addListener(() => serial(async () => {
   const initial = await settings(); delete initial.root;
@@ -80,12 +87,19 @@ chrome.runtime.onInstalled.addListener(() => serial(async () => {
   await syncScripts();
   for (const tab of await chrome.tabs.query({})) await requestForTab(tab);
 }).catch(console.error));
-chrome.runtime.onStartup.addListener(() => serial(async () => { await syncActionMenu(); await syncScripts(); }).catch(console.error));
+chrome.runtime.onStartup.addListener(() => serial(async () => {
+  await syncActionMenu(); await syncScripts();
+  for (const tab of await chrome.tabs.query({})) await requestForTab(tab);
+}).catch(console.error));
 chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
-  if (change.url || change.status === 'complete') requestForTab(tab).catch(console.error);
+  if (change.url || change.title || change.status === 'complete') serial(() => requestForTab(tab)).catch(console.error);
   if (change.status === 'complete') refreshTypography(tab).catch(console.error);
 });
-chrome.permissions.onAdded.addListener(() => serial(async () => {
+chrome.tabs.onActivated.addListener(({ tabId }) => serial(async () => {
+  await requestForTab(await chrome.tabs.get(tabId));
+}).catch(console.error));
+chrome.permissions.onAdded.addListener(permissions => serial(async () => {
+  await onboarding.permissionAdded(permissions);
   await syncScripts();
   const s = await settings();
   for (const tab of await chrome.tabs.query({})) if (inSite(tab.url, s.site)) await inject(tab.id);
@@ -203,6 +217,10 @@ async function startPreview(message, sender, s) {
   return { ok: true };
 }
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
+  if (['site-access-info', 'site-access-activate'].includes(message?.type)) {
+    serial(() => onboarding.message(message, sender)).then(reply, () => reply({ ok: false, error: '設定を登録できませんでした。' }));
+    return true;
+  }
   if (message?.target === 'offscreen') return;
   if (['browser-check', 'browser-save', 'save-progress', 'save-result', 'bulk-progress', 'bulk-result'].includes(message?.type)) {
     if (sender.id !== chrome.runtime.id || sender.tab || sender.url !== chrome.runtime.getURL('offscreen.html')) return;
@@ -285,6 +303,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   return true;
 });
 chrome.tabs.onRemoved.addListener(tab => serial(async () => {
+  await onboarding.removeTab(tab);
   const token = previewTabs.get(tab); if (token) { previewTabs.delete(tab); try { await chrome.runtime.sendMessage({ target: 'offscreen', type: 'release-preview', token }); } catch {} }
   const { intents = [] } = await chrome.storage.session.get('intents');
   await chrome.storage.session.set({ intents: intents.filter(i => i.tab !== tab) });

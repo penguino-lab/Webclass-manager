@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WebClassで拡張を使う</title><link rel="stylesheet" href="onboarding.css"></head>
+<body><main>
+  <img src="icons/icon-48.png" width="48" height="48" alt="Web+">
+  <p class="eyebrow">はじめてのWebClass</p>
+  <h1>このWebClassで使う</h1>
+  <p>サイトを検出しました。アクセスを許可すると、画面の改善と資料の保存機能を使えます。</p>
+  <div class="site"><span>検出したベースURL</span><strong id="site">確認しています…</strong></div>
+  <p class="help">このサイトの読み取り・変更をChromeに許可します。URLは自動で登録され、設定から変更できます。</p>
+  <p id="status" role="status" aria-live="polite"></p>
+  <button id="allow" disabled>このWebClassで使う</button>
+  <button id="later" class="secondary">あとで</button>
+  <p class="footnote">あとで設定する場合は、WebClass上でWeb+アイコンをクリックしてください。</p>
+</main><script type="module" src="onboarding.js"></script></body></html>

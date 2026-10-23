@@ -30,6 +30,10 @@ jobs:
         run: node tests/library-first-run-browser.mjs
         env:
           LIBRARY_TEST_OUTPUT: ${{ runner.temp }}/webclass-library-first-run
+      - name: Test WebClass updates and unavailable materials
+        run: node tests/webclass-updates-browser.mjs
+        env:
+          LIBRARY_TEST_OUTPUT: ${{ runner.temp }}/webclass-library-first-run
       - uses: actions/upload-artifact@v4
         if: always()
         with:

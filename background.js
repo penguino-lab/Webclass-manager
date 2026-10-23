@@ -1,12 +1,20 @@
 import { DEFAULTS, TTL, inSite, digest, chooseIntent, destination, filename, courseId, contentsId, usableName, hostPattern } from './core.js';
 import { previewType } from './resource-tools.js';
 import { createSiteOnboarding } from './site-onboarding.js';
+import { createUpdateChecker } from './update-notice.js';
 let queue = Promise.resolve(), creating;
 const previewTabs = new Map();
 const webClassLogin = 'https://webclass.tcu.ac.jp/webclass/singlesignon.php?auth_mode=SAML';
 const libraryMenuId = 'webclass-open-library';
 const onboarding = createSiteOnboarding(chrome, { settings, activate: activateSite });
+const releaseChecker = createUpdateChecker({ storage: chrome.storage.local });
+const checkRelease = () => { releaseChecker.check().catch(() => {}); };
+async function checkReleaseForTab(tab) {
+  const s = await settings();
+  if (inSite(tab.url, s.site)) checkRelease();
+}
 chrome.action.onClicked.addListener(async tab => {
+  checkRelease();
   try {
     const s = await settings();
     if (s.actionOpensLibrary) {
@@ -18,7 +26,7 @@ chrome.action.onClicked.addListener(async tab => {
   } catch (error) { console.error(error); }
 });
 chrome.contextMenus.onClicked.addListener(info => {
-  if (info.menuItemId === libraryMenuId) chrome.tabs.create({url:chrome.runtime.getURL('library.html')}).catch(console.error);
+  if (info.menuItemId === libraryMenuId) { checkRelease(); chrome.tabs.create({url:chrome.runtime.getURL('library.html')}).catch(console.error); }
 });
 async function syncActionMenu() {
   await chrome.contextMenus.removeAll();
@@ -58,7 +66,7 @@ async function inject(tabId) {
   try {
     await applyTypography(tabId);
     await chrome.scripting.insertCSS({ target: { tabId, allFrames: true }, files: ['page-ui.css', 'course-ui.css'] });
-    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['page-themes.js', 'banner-crop.js', 'page-ui.js', 'webclass-adapter.js', 'material-ui.js', 'course-ui.js', 'content.js'] });
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['release-version.js', 'page-themes.js', 'banner-crop.js', 'page-ui.js', 'webclass-adapter.js', 'material-ui.js', 'course-ui.js', 'content.js'] });
   } catch {}
 }
 async function syncScripts() {
@@ -72,7 +80,7 @@ async function syncScripts() {
     const coursePattern = site.origin + site.pathname.replace(/\/?$/, '/') + 'course.php/*';
     await chrome.scripting.registerContentScripts([
       { id: 'webclass-typography', matches: [pattern], css: ['typography.css'], runAt: 'document_start', allFrames: true, matchOriginAsFallback:true },
-      { id: 'webclass-page-ui', matches: [pagePattern], css: ['page-ui.css'], js: ['page-themes.js','banner-crop.js','page-ui.js'], runAt: 'document_start', allFrames: true },
+      { id: 'webclass-page-ui', matches: [pagePattern], css: ['page-ui.css'], js: ['release-version.js','page-themes.js','banner-crop.js','page-ui.js'], runAt: 'document_start', allFrames: true },
       { id: 'webclass-course-ui', matches: [coursePattern], css: ['course-ui.css'], js: ['course-ui.js'], runAt: 'document_start', allFrames: true },
       { id: 'webclass', matches: [pattern], js: ['webclass-adapter.js', 'material-ui.js', 'content.js'], runAt: 'document_idle', allFrames: true }
     ]);
@@ -102,11 +110,12 @@ chrome.runtime.onStartup.addListener(() => serial(async () => {
   for (const tab of await chrome.tabs.query({})) await requestForTab(tab);
 }).catch(console.error));
 chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
+  if (change.url || change.status === 'complete') checkReleaseForTab(tab).catch(() => {});
   if (change.url || change.title || change.status === 'complete') requestForTab(tab).catch(console.error);
   if (change.status === 'complete') refreshTypography(tab).catch(console.error);
 });
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-  try { await requestForTab(await chrome.tabs.get(tabId)); }
+  try { const tab = await chrome.tabs.get(tabId); checkReleaseForTab(tab).catch(() => {}); await requestForTab(tab); }
   catch (error) { console.error(error); }
 });
 chrome.permissions.onAdded.addListener(permissions => serial(async () => {
@@ -286,7 +295,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       if (frame?.documentId === sender.documentId && inSite(frame.result, s.site)) sender = { ...sender, url: frame.result };
     }
     if (sender.id !== chrome.runtime.id || !sender.tab || !inSite(sender.url, s.site)) return { ok: false };
-    if (message.type === 'open-library') { await chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }); return { ok: true }; }
+    if (message.type === 'open-library') { checkRelease(); await chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }); return { ok: true }; }
     if (message.type === 'open-download-location') {
       const { completedDownloads = {} } = await chrome.storage.session.get('completedDownloads');
       const completed = completedDownloads[message.jobId];

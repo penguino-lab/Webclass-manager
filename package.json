@@ -1,1 +1,1 @@
-{"name":"webclass-library-manager","version":"0.9.3","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js","demo":"node tests/demo-server.js"}}
+{"name":"webclass-library-manager","version":"0.9.4","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js","demo":"node tests/demo-server.js"}}

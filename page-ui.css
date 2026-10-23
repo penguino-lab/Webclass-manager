@@ -35,6 +35,9 @@
 .wcl-library-hero:is(:hover,:focus-visible) .wcl-library-hero-label{background:linear-gradient(135deg,var(--wcl-accent,#52677e),var(--wcl-hover,#40566e));border-color:var(--wcl-hover,#40566e);box-shadow:0 6px 24px color-mix(in srgb,var(--wcl-accent,#52677e) 30%,transparent),inset 0 1px 0 #ffffff30;transform:translateY(-1px)}
 .wcl-library-hero:focus-visible{outline:3px solid var(--wcl-accent,#52677e);outline-offset:4px}
 .wcl-library-hero:disabled{cursor:wait}
+#wcl-release-notice{position:fixed;right:16px;z-index:10000;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:min(480px,calc(100vw - 24px));padding:14px 16px;border:2px solid #cb8515;border-radius:12px;background:#fff4d8;color:#5e3d0b;font:13px/1.5 system-ui,sans-serif;box-shadow:0 5px 24px #35230030}
+#wcl-release-notice[hidden]{display:none!important}#wcl-release-notice>div{flex:1;min-width:0}#wcl-release-notice strong{display:block;font-size:14px;color:#5e3d0b}#wcl-release-notice .wcl-release-version{display:block;font-size:12px;color:#75531c}#wcl-release-notice>a{flex-shrink:0;padding:9px 12px;border-radius:7px;background:#8c5708;color:#fff!important;text-decoration:none;font-weight:700}#wcl-release-notice>button{flex-shrink:0;border:0;background:transparent;color:#5e3d0b;font:24px/1 system-ui;min-width:32px;min-height:36px;cursor:pointer}#wcl-release-notice :is(a,button):focus-visible{outline:3px solid #5e3d0b;outline-offset:3px}
+@media(max-width:600px){#wcl-release-notice{right:12px;padding:10px;gap:6px}#wcl-release-notice strong{font-size:12px}#wcl-release-notice>a{font-size:12px;padding:8px}}
 @media(max-width:767px){#UserTopInfo:has(#NewestInformations){gap:8px}#UserTopInfo:has(#NewestInformations)>.page-header{max-width:96px;padding-inline:10px!important;font-size:12px}#UserTopInfo #NewestInformations{gap:8px}.wcl-library-hero{border-radius:12px}.wcl-library-hero-label{min-height:50px;padding:8px 10px 8px 18px;gap:16px;font-size:16px}}
 @media(prefers-reduced-motion:reduce){.wcl-library-hero-image,.wcl-library-hero::after,.wcl-library-hero-label{transition:none}.wcl-library-hero:hover .wcl-library-hero-image,.wcl-library-hero:focus-visible .wcl-library-hero-image,.wcl-library-hero:is(:hover,:focus-visible) .wcl-library-hero-label{transform:none}}
 /* Keep the native header dimensions and navigation/dropdown behavior. */
@@ -202,7 +205,6 @@ form:has(#ContentInfo) .wcl-intro-actions :is(input,button){display:inline-flex!
   #search-app input{background-color:transparent!important}
   #search-app input::placeholder{color:var(--wcl-muted)!important;opacity:1}
   .wcl-course-card.wcl-openable:hover{background-color:var(--wcl-soft)!important}
-  .wcl-course-card.wcl-unavailable{background-color:var(--wcl-heading)!important;color:var(--wcl-muted)!important}
   .timeline-message-author,.wcl-account-logout{border-color:var(--wcl-line)!important}
   .btn-primary{background:var(--wcl-accent)!important;border-color:var(--wcl-hover)!important;color:#fff!important}
   .btn-primary:hover,.btn-primary:focus{background:var(--wcl-hover)!important}

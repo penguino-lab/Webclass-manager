@@ -4,10 +4,13 @@ const event = () => ({ listeners:[], addListener(fn) { this.listeners.push(fn); 
 const session = {};
 const saved = { enabled:true, root:'WebClass', site:'https://example.edu/webclass/', selector:'' };
 let overrides = {};
+const localValues = {};
+let releaseFetch = async () => ({ ok: true, json: async () => ({ name: 'WebClass Library Manager', version: '0.9.4' }) });
+globalThis.fetch = (...args) => releaseFetch(...args);
 globalThis.chrome = {
   action:{onClicked:event(),setTitle:async value=>{session.actionTitle=value.title;}},
   contextMenus:{onClicked:event(),removeAll:async()=>{},create:value=>{session.actionMenu=value;}},
-  storage:{ local:{get:async()=>({settings:saved,courseOverrides:overrides})}, session:{get:async()=>structuredClone(session),set:async v=>Object.assign(session,structuredClone(v)),clear:async()=>{delete session.intents;}},onChanged:event() },
+  storage:{ local:{get:async()=>({settings:saved,courseOverrides:overrides,...structuredClone(localValues)}),set:async v=>Object.assign(localValues,structuredClone(v))}, session:{get:async()=>structuredClone(session),set:async v=>Object.assign(session,structuredClone(v)),clear:async()=>{delete session.intents;}},onChanged:event() },
   runtime:{id:'test-extension',getURL:path=>'chrome-extension://test-extension/'+path,getContexts:async()=>[{contextType:'OFFSCREEN_DOCUMENT'}],sendMessage:async value=>{session.runtimeMessage=value;return value.type==='preview-job'?{ok:true,url:'blob:preview',token:'preview-token'}:{accepted:true};},onInstalled:event(),onStartup:event(),onMessage:event()},
   offscreen:{createDocument:async()=>{}},
   scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async()=>{},removeCSS:async()=>{},insertCSS:async()=>{}},
@@ -38,6 +41,20 @@ test('toolbar opens the configured university and the action context menu opens 
   assert.equal(session.createdTab.url,saved.site);
   chrome.contextMenus.onClicked.listeners[0]({menuItemId:'webclass-open-library'});
   assert.equal(session.createdTab.url,'chrome-extension://test-extension/library.html');
+});
+
+test('toolbar navigation does not wait for a pending release check', async () => {
+  await new Promise(resolve => setImmediate(resolve));
+  delete localValues.publicReleaseCheck;
+  const original = releaseFetch; let release, calls = 0;
+  releaseFetch = async () => { calls++; await new Promise(resolve => { release = resolve; }); return original(); };
+  try {
+    await Promise.race([chrome.action.onClicked.listeners[0](), new Promise((_, reject) => setTimeout(() => reject(Error('navigation waited for metadata')), 500))]);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(session.createdTab.url, saved.site); assert.equal(calls, 1);
+    await chrome.tabs.onUpdated.listeners[0](1, { status: 'complete' }, { id: 1, url: saved.site });
+    assert.equal(calls, 1, 'WebClass access shares the pending check');
+  } finally { release?.(); releaseFetch = original; await new Promise(resolve => setImmediate(resolve)); }
 });
 
 test('library toolbar preference bypasses WebClass setup even on an unapproved site', async () => {

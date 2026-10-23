@@ -1,21 +1,11 @@
+import './release-version.js';
 export const UPDATE_MANIFEST_URL = 'https://raw.githubusercontent.com/penguino-lab/Webclass-manager/main/manifest.json';
-const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
-const RETRY_INTERVAL = 15 * 60 * 1000;
+const CHECK_INTERVAL = 60 * 1000;
+const RETRY_INTERVAL = 60 * 1000;
 const key = 'publicReleaseCheck';
-function versionParts(value) {
-  return typeof value === 'string' && /^\d{1,5}(?:\.\d{1,5}){0,3}$/.test(value) && value.split('.').every(n => Number(n) <= 65535)
-    ? value.split('.').map(Number) : null;
-}
-export function isNewerVersion(latest, installed) {
-  const a = versionParts(latest), b = versionParts(installed);
-  if (!a || !b) return false;
-  for (let i = 0; i < 4; i++) {
-    const difference = (a[i] || 0) - (b[i] || 0);
-    if (difference) return difference > 0;
-  }
-  return false;
-}
-export function createUpdateChecker({ storage, fetchManifest = fetch, now = Date.now }) {
+const versionParts = globalThis.WebClassReleaseVersion.parts;
+export const isNewerVersion = globalThis.WebClassReleaseVersion.isNewerVersion;
+export function createUpdateChecker({ storage, fetchManifest = fetch, now = Date.now, locks = globalThis.navigator?.locks }) {
   let inFlight;
   async function check(force) {
     const cached = (await storage.get(key))[key] || {};
@@ -39,7 +29,12 @@ export function createUpdateChecker({ storage, fetchManifest = fetch, now = Date
   }
   return {
     check({ force = false } = {}) {
-      if (!inFlight) inFlight = check(force).finally(() => { inFlight = undefined; });
+      if (!inFlight) {
+        // Background, library tabs, and newly opened tabs share the same lock.
+        // Re-read the timestamp after acquiring it to coalesce cross-context triggers.
+        inFlight = Promise.resolve().then(() => locks ? locks.request('webclass-public-release-check', () => check(force)) : check(force))
+          .finally(() => { inFlight = undefined; });
+      }
       return inFlight;
     }
   };
@@ -50,6 +45,8 @@ export function mountUpdateNotice(api) {
   const checker = createUpdateChecker({ storage: api.storage.local });
   let latest = '';
   $('installed-version').textContent = `現在のバージョン：${installed}`;
+  $('header-version').textContent = `v${installed}`;
+  $('header-version').title = `WebClass Library Manager ${installed}`;
   function render(version, dismissed) {
     latest = version;
     const available = isNewerVersion(version, installed);
@@ -63,6 +60,7 @@ export function mountUpdateNotice(api) {
       const result = await checker.check({ force });
       const { dismissedUpdateVersion } = await api.storage.local.get('dismissedUpdateVersion');
       // An explicit check also reopens an update the user previously dismissed.
+      if (force && isNewerVersion(result.version, installed)) await api.storage.local.set({ dismissedUpdateVersion: '' });
       render(result.version, force ? '' : dismissedUpdateVersion);
       if (force) $('update-status').textContent = result.failed ? '更新を確認できませんでした。接続後にもう一度お試しください。'
         : isNewerVersion(result.version, installed) ? '新しいバージョンがあります。上部の更新手順をご覧ください。' : '最新バージョンを使用しています。';
@@ -77,6 +75,9 @@ export function mountUpdateNotice(api) {
   });
   api.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.dismissedUpdateVersion) render(latest, changes.dismissedUpdateVersion.newValue);
+    if (area === 'local' && changes[key]) {
+      api.storage.local.get('dismissedUpdateVersion').then(values => render(changes[key].newValue?.version || '', values.dismissedUpdateVersion)).catch(() => {});
+    }
   });
   // Check cached state first so an already-known update appears without a network wait.
   api.storage.local.get([key, 'dismissedUpdateVersion']).then(values => {

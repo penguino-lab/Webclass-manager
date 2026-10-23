@@ -1,6 +1,6 @@
 /* Loaded after each extension page's base styles; default retains its own UI. */
 @scope (html[data-wcl-theme]:not([data-wcl-theme="default"])) {
-  :scope{--accent:var(--wcl-accent);--line:var(--wcl-line);--muted:var(--wcl-muted);background:var(--wcl-canvas);color:var(--wcl-ink)}
+  :scope{--accent:var(--wcl-accent);--line:var(--wcl-line);--muted:var(--wcl-muted);--course-ink:var(--wcl-ink);--course-muted:var(--wcl-muted);background:var(--wcl-canvas);color:var(--wcl-ink)}
   body{background:var(--wcl-canvas);color:var(--wcl-ink)}
   :is(main.popup,.sidebar,.details,.entry,select,.setting-url-row input,.type-chip){background:var(--wcl-surface);color:var(--wcl-ink);border-color:var(--wcl-line)}
   .folder-start{background:var(--wcl-surface);color:var(--wcl-ink);border-color:var(--wcl-line)}.folder-start:hover{background:var(--wcl-soft);border-color:var(--wcl-accent)}.folder-start-title{color:var(--wcl-ink)}.update-banner{background:var(--wcl-soft);color:var(--wcl-ink);border-color:var(--wcl-border)}

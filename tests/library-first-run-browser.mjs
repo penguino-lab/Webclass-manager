@@ -70,19 +70,113 @@ try {
   await page.locator('.entry[data-path="数学"]').waitFor();
   await page.locator('#all').click();
   assert.equal(await page.locator('.entry').count(), 1);
+  // A read grant alone is not enough for the selected save destination.
+  // The recovery click asks once for read+write and keeps the stored handle.
+  await page.evaluate(() => {
+    window.originalQuery = FileSystemDirectoryHandle.prototype.queryPermission;
+    window.originalRequest = FileSystemDirectoryHandle.prototype.requestPermission;
+    window.testAccess = 'prompt'; window.testAnswer = 'denied'; window.accessRequests = [];
+    FileSystemDirectoryHandle.prototype.queryPermission = async options => options.mode === 'readwrite' ? window.testAccess : 'granted';
+    FileSystemDirectoryHandle.prototype.requestPermission = async options => {
+      window.accessRequests.push({ ...options, gesture: navigator.userActivation.isActive });
+      if (window.testAnswer === 'granted') window.testAccess = 'granted';
+      return window.testAnswer;
+    };
+  });
+  await page.locator('#refresh').click();
+  await page.locator('#permission:visible').waitFor();
+  assert.match(await page.locator('#permission').innerText(), /サイトアクセス時は常に許可/);
+  await page.screenshot({ path: join(run, 'permission-guidance.png'), fullPage: true });
+  await page.locator('#grant').click();
+  await page.locator('#directory-permission-status').filter({ hasText: '許可されませんでした' }).waitFor();
+  assert.equal(await page.locator('#grant').isEnabled(), true);
+  await page.evaluate(() => { window.testAnswer = 'granted'; });
+  await page.locator('#grant').click();
+  await page.locator('#permission').waitFor({ state: 'hidden' });
+  assert.deepEqual(await page.evaluate(() => window.accessRequests), [
+    { mode: 'readwrite', gesture: true }, { mode: 'readwrite', gesture: true }
+  ]);
+  await page.evaluate(() => {
+    FileSystemDirectoryHandle.prototype.queryPermission = window.originalQuery;
+    FileSystemDirectoryHandle.prototype.requestPermission = window.originalRequest;
+  });
+  // Keep source paths intact, with compact labels only in the sidebar/all-files view.
+  const courseTitle = '化学熱力学(2a)', courseSuffix = '(' + '担当者・'.repeat(24) + '教員、2026年度後期前半)_ABC123';
+  const fullCourse = courseTitle + courseSuffix;
+  await page.evaluate(async fullCourse => {
+    const { directoryHandle } = await import(chrome.runtime.getURL('directory-store.js'));
+    const course = await (await directoryHandle()).getDirectoryHandle(fullCourse, { create: true });
+    for (const name of ['開ける.txt', '表.csv', 'Office.docx']) {
+      const stream = await (await course.getFileHandle(name, { create: true })).createWritable(); await stream.write('dummy'); await stream.close();
+    }
+  }, fullCourse);
+  await page.locator('#refresh').click();
+  await page.waitForFunction(() => !document.getElementById('refresh').disabled);
+  await page.locator('#home').click();
+  const label = page.locator(`.entry[data-path="${fullCourse}"] .entry-name`);
+  assert.equal(await label.locator('.course-title').textContent(), courseTitle);
+  assert.equal(await label.textContent(), fullCourse);
+  assert.equal(await label.evaluate(el => el.scrollHeight > el.clientHeight), true, 'long metadata is clamped');
+  const checkColors = async () => {
+    const colors = await label.evaluate(el => ({ ellipsis: getComputedStyle(el).color, suffix: getComputedStyle(el.querySelector('.course-suffix')).color, title: getComputedStyle(el.querySelector('.course-title')).color }));
+    assert.equal(colors.ellipsis, colors.suffix, 'the browser-drawn ellipsis uses the muted metadata color');
+    assert.notEqual(colors.title, colors.suffix, 'the actual course title stays emphasized');
+  };
+  await checkColors();
+  assert.equal(await page.locator(`#tree button[title="${fullCourse}"] .tree-name`).textContent(), courseTitle);
+  await page.screenshot({ path: join(run, 'course-ellipsis.png'), fullPage: true });
+  for (const theme of ['forest', 'charcoal', 'default']) {
+    await page.evaluate(theme => chrome.storage.local.set({ pageTheme: theme }), theme);
+    await page.waitForFunction(theme => document.documentElement.dataset.wclTheme === theme, theme);
+    await checkColors();
+  }
+  await page.locator('#list').click();
+  await checkColors();
+  await page.locator('#all').click();
+  const textCard = page.locator(`.entry[data-path="${fullCourse}/開ける.txt"]`);
+  assert.equal(await textCard.locator('.entry-parent').textContent(), courseTitle);
+  assert.equal(await page.locator('.entry-parent .course-suffix').count(), 0);
+  const thumbnail = textCard.locator('.entry-open'), hint = thumbnail.locator('.entry-open-hint');
+  assert.match(await thumbnail.getAttribute('title'), /Chromeで開く/);
+  const originalSize = await thumbnail.boundingBox();
+  await thumbnail.hover();
+  await page.waitForFunction(() => [...document.querySelectorAll('.entry-open-hint')].some(el => getComputedStyle(el).opacity === '1'));
+  assert.equal(await hint.evaluate(el => getComputedStyle(el).opacity), '1');
+  assert.deepEqual(await thumbnail.boundingBox(), originalSize, 'hint is overlaid without moving the thumbnail');
+  assert.equal(await page.locator(`.entry[data-path="${fullCourse}/Office.docx"] .entry-open-hint`).count(), 0);
+  assert.equal(await page.locator(`.entry[data-path="${fullCourse}/表.csv"] .entry-open-hint`).count(), 1);
+  await page.mouse.move(0, 0);
+  await thumbnail.focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+  assert.equal(await thumbnail.evaluate(el => el.matches(':focus-visible')), true);
+  await page.screenshot({ path: join(run, 'thumbnail-open-hint.png'), fullPage: true });
+  await page.locator('#grid').click();
+  await textCard.locator('.entry-open').hover();
+  await page.screenshot({ path: join(run, 'thumbnail-open-hint-grid.png'), fullPage: true });
+  await page.locator('#sidebar-settings').click();
+  await page.locator('label.switch:has(#settings-course-names)').click();
+  await page.waitForFunction(fullCourse => document.querySelector(`#tree button[title="${fullCourse}"] .tree-name`).textContent === fullCourse, fullCourse);
+  await page.locator('#all').click();
+  assert.equal(await textCard.locator('.entry-parent').textContent(), fullCourse, 'OFF restores the full original label');
+  await page.locator('#sidebar-settings').click();
+  await page.locator('label.switch:has(#settings-course-names)').click();
+  await page.locator('#all').click();
+  assert.equal(await textCard.locator('.entry-parent').textContent(), courseTitle);
+  await page.reload();
+  await textCard.waitFor();
+  assert.equal(await textCard.locator('.entry-parent').textContent(), courseTitle, 'compact labels persist after reload');
   await page.locator('#sidebar-settings').click();
   assert.equal(await page.locator('#settings-recursive').isChecked(), false);
   await page.locator('label.switch:has(#settings-recursive)').click();
-  await page.waitForFunction(() => document.getElementById('count').textContent === '3個の項目');
+  await page.waitForFunction(() => document.getElementById('count').textContent === '6個の項目');
   await page.locator('#all').click();
   await page.locator('.entry[data-path="数学/補足/深い資料.txt"]').waitFor();
-  assert.equal(await page.locator('.entry').count(), 3);
+  assert.equal(await page.locator('.entry').count(), 6);
   await page.reload(); await page.locator('#sidebar-settings').click();
   assert.equal(await page.locator('#settings-recursive').isChecked(), true);
   await page.locator('label.switch:has(#settings-recursive)').click();
-  await page.waitForFunction(() => document.getElementById('count').textContent === '1個の項目');
+  await page.waitForFunction(() => document.getElementById('count').textContent === '4個の項目');
   await page.locator('#all').click();
-  assert.equal(await page.locator('.entry').count(), 1);
+  assert.equal(await page.locator('.entry').count(), 4);
   await page.locator('#sidebar-settings').click();
   await page.screenshot({ path: join(run, 'scan-settings.png'), fullPage: true });
   const headerHeight = await page.locator('.topbar').evaluate(el => el.getBoundingClientRect().height);
@@ -116,6 +210,6 @@ try {
     assert.equal(live.failed, false, 'public metadata is readable without extra host permissions');
     console.log('Live public version check:', live.version);
   }
-  console.log('PASS: first-run click/gesture, cancel/denied picker, empty folder, default depth, recursive toggle/reload, version banner/cache/dismiss/manual check, stable header, mobile layout.');
+  console.log('PASS: first-run folder setup; combined read/write grant and persistent-permission guidance; muted course ellipsis and compact labels; thumbnail hover/focus actions; recursive preference; update notices; stable header and mobile layout.');
   console.log('Artifacts:', run);
 } finally { await context?.close(); }

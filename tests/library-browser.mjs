@@ -313,12 +313,13 @@ export async function checkLibrary(context, id, options, artifacts, errors) {
   await secondLibrary.locator('.entry').first().waitFor();
   await library.locator('#sidebar-settings').click();
   await library.locator('label.switch:has(#settings-course-names)').click();
-  await library.waitForFunction(() => document.querySelector('#tree .course-suffix') !== null);
-  await secondLibrary.waitForFunction(() => document.querySelector('#tree .course-suffix') !== null);
+  await library.waitForFunction(() => document.querySelector('#heading .course-suffix') !== null);
+  await secondLibrary.waitForFunction(() => document.querySelector('.entry-name .course-suffix') !== null);
   await secondLibrary.close();
   await library.screenshot({ path: join(artifacts, 'library-course-name-settings.png'), fullPage: true });
   await library.locator('#home').click(); await library.locator('#all').click();
-  assert.ok(await library.locator('.entry-parent .course-suffix').count() > 0, 'containing-folder labels use the same styling');
+  assert.equal(await library.locator('.entry-parent .course-suffix').count(), 0, 'all-files labels omit course metadata');
+  assert.equal(await library.locator('#tree .course-suffix').count(), 0, 'sidebar labels omit course metadata');
   console.log('PASS: course metadata styling; title qualifiers preserved; grid/list/tree/heading/breadcrumb/details; default ON; immediate toggle; reload persistence; cross-tab update; original paths and file names preserved');
   assert.deepEqual(consoleErrors, [], 'library has no CSP or rendering errors');
   await library.close();

@@ -17,18 +17,19 @@ let currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('setting
 const state = { mode: 'folder', path: '', query: '', types: [], sort: 'modified' };
 function status(text) { $('status').textContent = text; }
 function node(tag, text, className) { const result = document.createElement(tag); if (text !== undefined) result.textContent = text; if (className) result.className = className; return result; }
-function courseName(target, name) {
+function courseName(target, name, { compact = false } = {}) {
   const { title, suffix } = emphasizeCourseNames ? splitCourseName(name) : { title: name, suffix: '' };
+  target.classList.toggle('course-emphasized', !!suffix && !compact);
   target.replaceChildren(node('span', title, 'course-title'));
-  if (suffix) target.append(node('span', suffix, 'course-suffix'));
+  if (suffix && !compact) target.append(node('span', suffix, 'course-suffix'));
   target.title = name;
   return target;
 }
-function coursePath(target, path) {
+function coursePath(target, path, options) {
   target.replaceChildren();
   for (const [index, part] of path.split('/').entries()) {
     if (index) target.append(document.createTextNode('/'));
-    target.append(courseName(node('span'), part));
+    target.append(courseName(node('span'), part, options));
   }
 }
 function action(id, callback) { $(id).addEventListener('click', () => Promise.resolve().then(callback).catch(() => status('操作できませんでした。アクセス許可を確認して、もう一度お試しください。'))); }
@@ -90,7 +91,7 @@ function renderTree() {
   for (const entry of entries.filter(entry => entry.kind === 'directory').sort((a, b) => a.path.localeCompare(b.path, 'ja', { numeric: true }))) {
     const button = node('button', undefined, 'tree-button' + (state.mode === 'folder' && state.path === entry.path ? ' active' : ''));
     button.title = entry.path; button.style.paddingLeft = `${12 + Math.min(entry.path.split('/').length - 1, 8) * 12}px`;
-    button.append(node('span', '▱', 'tree-symbol'), courseName(node('span', undefined, 'tree-name'), entry.name)); button.addEventListener('click', () => navigate('folder', entry.path)); fragment.append(button);
+    button.append(node('span', '▱', 'tree-symbol'), courseName(node('span', undefined, 'tree-name'), entry.name, { compact: true })); button.addEventListener('click', () => navigate('folder', entry.path)); fragment.append(button);
   }
   $('tree').replaceChildren(fragment);
 }
@@ -116,7 +117,8 @@ function renderEntries() {
   const files = matchingFiles(entries, state), counts = folderFileCounts(files);
   for (const entry of result.slice(0, limit)) {
     const card = node('article', undefined, 'entry' + (selected?.path === entry.path ? ' selected' : '')); card.dataset.path = entry.path;
-    const open = node('button', undefined, 'entry-open'); open.title = entry.path; open.setAttribute('aria-label', `${entry.kind === 'directory' ? 'フォルダを開く' : canOpenInBrowser(entry) ? 'Chromeで開く' : '詳細を表示'}: ${entry.path}`);
+    const canOpen = entry.kind === 'file' && !entry.error && canOpenInBrowser(entry);
+    const open = node('button', undefined, 'entry-open'); open.title = `${entry.kind === 'directory' ? 'フォルダを開く' : canOpen ? 'Chromeで開く' : '詳細を表示'}: ${entry.path}`; open.setAttribute('aria-label', open.title);
     open.addEventListener('click', () => openFile(entry).catch(() => status('ファイルを開けませんでした。更新してお試しください。')));
     const art = node('span', undefined, 'entry-art ' + entry.type); art.setAttribute('aria-hidden', 'true'); art.append(node('span', icons[entry.type], 'file-icon'));
     const info = node('button', undefined, 'entry-info'); info.setAttribute('aria-label', `${entry.kind === 'directory' ? 'フォルダを開く' : 'プレビューを表示'}: ${entry.path}`);
@@ -126,9 +128,12 @@ function renderEntries() {
     info.append(name);
     if (entry.kind === 'file') info.append(node('span', `${typeNames[entry.type]} · ${formatSize(entry.size)}`, 'entry-meta entry-size'));
     else if (view === 'list') info.append(node('span', `${counts.get(entry.path) || 0}件の資料`, 'entry-meta'));
-    if (entry.kind === 'file' && state.mode !== 'folder') { const parent = node('span', undefined, 'entry-meta entry-parent'); coursePath(parent, entry.parent || root?.name || '保存先'); info.append(parent); }
+    if (entry.kind === 'file' && state.mode !== 'folder') { const parent = node('span', undefined, 'entry-meta entry-parent'); coursePath(parent, entry.parent || root?.name || '保存先', { compact: state.mode === 'all' }); info.append(parent); }
     if (entry.error) info.append(node('span', '読み込みできません', 'entry-meta'));
     open.append(art); card.append(open, info);
+    if (canOpen) {
+      const hint = node('span', 'Chromeで開く ↗', 'entry-open-hint'); hint.setAttribute('aria-hidden', 'true'); open.append(hint);
+    }
     card.addEventListener('click', event => { if (!event.target.closest('button')) selectFile(entry); });
     if (entry.kind === 'directory') {
       const covers = folderCoverEntries(files, entry.path);
@@ -181,9 +186,9 @@ async function refresh() {
     root = handle;
     document.body.classList.remove('connected');
     if (!handle) { entries = []; rootId = null; metadata = Object.create(null); state.path = ''; clearSelection(); render(); status(''); return; }
-    const permission = await handle.queryPermission({ mode: 'read' });
+    const permission = await handle.queryPermission({ mode: 'readwrite' });
     if (current !== generation) return;
-    if (permission !== 'granted') { entries = []; clearSelection(); $('permission').hidden = false; render(); status('フォルダへのアクセス許可が必要です。'); return; }
+    if (permission !== 'granted') { entries = []; clearSelection(); $('permission').hidden = false; render(); status(''); return; }
     const id = await rootIdentity(handle);
     const stored = await chrome.storage.local.get(null);
     if (current !== generation) return;
@@ -285,8 +290,17 @@ $('library-settings-form').addEventListener('submit', async event => {
   } catch (error) { $('settings-status').textContent = '保存できませんでした：' + error.message; }
 });
 $('grant').addEventListener('click', async () => {
-  try { if (root && await root.requestPermission({ mode: 'read' }) === 'granted') await refresh(); else status('アクセスは許可されませんでした。'); }
-  catch { status('アクセスを許可できませんでした。保存先を選び直してください。'); }
+  const message = $('directory-permission-status');
+  try {
+    if (!root) return;
+    // Ask for viewing and saving together, directly within the user's click.
+    // Chrome controls whether the prompt offers a persistent grant.
+    const permission = root.requestPermission({ mode: 'readwrite' });
+    $('grant').disabled = true; message.textContent = '';
+    if (await permission === 'granted') await refresh();
+    else message.textContent = '許可されませんでした。続ける場合はもう一度確認してください。';
+  } catch { message.textContent = 'アクセスを許可できませんでした。設定で保存先を選び直してください。'; }
+  finally { $('grant').disabled = false; }
 });
 action('refresh', refresh); action('home', () => navigate('folder')); action('all', () => navigate('all')); action('favorites', () => navigate('favorites')); action('close-details', () => { clearSelection(); renderEntries(); });
 for (const id of ['grid', 'list']) action(id, async () => { view = id; $('grid').setAttribute('aria-pressed', String(id === 'grid')); $('list').setAttribute('aria-pressed', String(id === 'list')); renderEntries(); await chrome.storage.local.set({ libraryView: view }); });

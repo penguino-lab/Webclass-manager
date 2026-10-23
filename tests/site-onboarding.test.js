@@ -54,6 +54,7 @@ test('activation requires a live matching tab, own extension page and granted ho
 
 test('background visits wait for activation and native Chrome grants also register the site', async () => {
   const f = fixture();
+  f.tabs.set(3, { ...f.tab, active: false });
   await f.module.requestForTab({ ...f.tab, active: false });
   assert.equal(f.prompts.length, 0);
   f.grants.add('https://campus.example.edu/*');
@@ -72,12 +73,42 @@ test('unrelated permission grants cannot select an old detected university', asy
 
 test('unrelated tabs and disabled auto setup do not open prompts; native request failures have a fallback', async () => {
   const f = fixture();
+  f.tabs.set(3, { ...f.tab, url: 'https://idp.example.edu/login' });
   await f.module.requestForTab({ ...f.tab, url: 'https://idp.example.edu/login' });
+  f.tabs.set(3, f.tab);
   f.config().enabled = false;
   await f.module.requestForTab(f.tab);
   assert.equal(f.prompts.length, 0);
   f.config().enabled = true;
   f.api.permissions.addHostAccessRequest = async () => { throw Error('unavailable'); };
+  await f.module.requestForTab(f.tab);
+  assert.equal(f.prompts.length, 1);
+});
+
+test('loading pages and a stalled native indicator do not delay the setup window', async () => {
+  const f = fixture();
+  f.tabs.set(3, { ...f.tab, status: 'loading' });
+  f.api.permissions.addHostAccessRequest = () => new Promise(() => {});
+  await f.module.requestForTab(f.tab);
+  assert.equal(f.prompts.length, 1);
+  assert.equal((await f.module.message({ type: 'site-access-info', tabId: 3 }, f.sender)).ok, true);
+});
+
+test('concurrent navigation events share one prompt and native request', async () => {
+  const f = fixture();
+  await Promise.all(Array.from({ length: 10 }, () => f.module.requestForTab(f.tab)));
+  assert.equal(f.prompts.length, 1);
+  assert.equal(f.requests.length, 1);
+});
+
+test('stale events cannot open a prompt for a tab that navigated away or became inactive', async () => {
+  const f = fixture();
+  f.tabs.set(3, { ...f.tab, url: 'https://idp.example.edu/login' });
+  assert.equal(await f.module.requestForTab(f.tab), false);
+  f.tabs.set(3, { ...f.tab, active: false });
+  await f.module.requestForTab(f.tab);
+  assert.equal(f.prompts.length, 0);
+  f.tabs.set(3, f.tab);
   await f.module.requestForTab(f.tab);
   assert.equal(f.prompts.length, 1);
 });

@@ -21,6 +21,10 @@
         <div><h3>自動整理</h3><p class="setting-help">WebClassから保存する資料を講義ごとに整理します。</p></div>
         <label class="switch"><input id="settings-enabled" type="checkbox"><span aria-hidden="true"></span><span class="switch-text">有効</span></label>
       </div>
+      <div class="setting-row">
+        <div><h3 id="action-library-label">拡張アイコンでライブラリを開く</h3><p class="setting-help">有効にすると、Web+アイコンのクリックで資料ライブラリを開きます。</p></div>
+        <label class="switch"><input id="settings-action-library" type="checkbox" aria-labelledby="action-library-label"><span aria-hidden="true"></span><span class="switch-text">有効</span></label>
+      </div>
       <div class="setting-row setting-url-row">
         <div><label for="settings-site"><h3>WebClassのベースURL</h3></label><p class="setting-help">大学のWebClass全体に共通するURLを指定します。</p></div>
         <input id="settings-site" type="url" required placeholder="https://webclass.example.ac.jp/webclass/">

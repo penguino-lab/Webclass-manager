@@ -1,5 +1,5 @@
 import './webclass-adapter.js';
-export const DEFAULTS = { enabled: true, site: 'https://webclass.tcu.ac.jp/webclass/', selector: '', saveMode: 'browser', folderName: '' };
+export const DEFAULTS = { enabled: true, site: 'https://webclass.tcu.ac.jp/webclass/', selector: '', saveMode: 'browser', folderName: '', actionOpensLibrary: false };
 export const courseId = globalThis.WebClassAdapter.urlContext.courseId;
 export const contentsId = globalThis.WebClassAdapter.urlContext.contentsId;
 export const usableName = globalThis.WebClassAdapter.urlContext.usableName;

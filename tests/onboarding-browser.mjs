@@ -10,15 +10,23 @@ const source = resolve(import.meta.dirname, '..');
 const artifacts = resolve(source, '..', 'tmp', 'webclass-onboarding');
 await mkdir(artifacts, { recursive: true });
 const run = await mkdtemp(join(artifacts, 'run-'));
+let slowResponses = [], holdImage = true;
+function releaseImages() { holdImage = false; for (const res of slowResponses) res.end(''); slowResponses = []; }
 const server = http.createServer((req, res) => {
+  if (req.url === '/slow-image') {
+    res.setHeader('Content-Type', 'image/png');
+    if (holdImage) slowResponses.push(res); else res.end('');
+    return;
+  }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.end('<!doctype html><html lang="ja"><title>WebClass - ダミー大学</title><body><nav class="navbar navbar-default"><div class="navbar-brand">WebClass</div><div class="navbar-collapse"><ul class="navbar-nav"></ul></div></nav><main>初回導入のダミー画面</main></body></html>');
+  res.end('<!doctype html><html lang="ja"><title>WebClass - ダミー大学</title><body><nav class="navbar navbar-default"><div class="navbar-brand">WebClass</div><div class="navbar-collapse"><ul class="navbar-nav"></ul></div></nav><main>初回導入のダミー画面<img src="/slow-image" alt=""></main></body></html>');
 });
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const site = `http://127.0.0.1:${server.address().port}/campus/webclass/`;
 let context;
 try {
   for (const granted of [false, true]) {
+    holdImage = true;
     const extension = join(run, granted ? 'allowed-extension' : 'fresh-extension');
     await mkdir(extension);
     for (const entry of await readdir(source, { withFileTypes: true })) {
@@ -37,10 +45,14 @@ try {
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const page = await context.newPage();
     const promptEvent = context.waitForEvent('page', { predicate: p => p !== page });
-    await page.goto(site + 'course.php/dummy/?token=do-not-store');
+    const started = performance.now();
+    await page.goto(site + 'course.php/dummy/?token=do-not-store', { waitUntil: 'domcontentloaded' });
     const prompt = await promptEvent;
     await prompt.waitForURL(/onboarding\.html\?tab=/);
     await prompt.locator('#allow:enabled').waitFor();
+    assert.equal(await page.evaluate(() => document.readyState), 'interactive', 'prompt is usable before the slow image finishes loading');
+    console.log(`Prompt usable while page is loading: ${Math.round(performance.now() - started)}ms (granted=${granted})`);
+    releaseImages();
     assert.equal(await prompt.locator('#site').textContent(), site);
     assert.equal(await worker.evaluate(() => chrome.storage.local.get('settings').then(r => r.settings.site)), 'https://webclass.tcu.ac.jp/webclass/');
     assert.ok(!JSON.stringify(await worker.evaluate(() => chrome.storage.session.get('siteAccess'))).includes('do-not-store'));
@@ -72,9 +84,23 @@ try {
       await page.reload();
       await page.locator('.wcl-library-button').waitFor();
       assert.equal(context.pages().filter(p => p.url().includes('onboarding.html')).length, 0);
+      const library = await context.newPage();
+      await library.setViewportSize({ width: 1440, height: 1000 });
+      await library.goto(worker.url().replace(/background.js$/, 'library.html'));
+      await library.locator('#sidebar-settings').click();
+      assert.equal(await library.locator('#settings-action-library').isChecked(), false);
+      await library.locator('label.switch:has(#settings-action-library)').click();
+      await library.locator('#library-settings-form button[type=submit]').click();
+      await library.locator('#settings-status').filter({ hasText: '設定を保存しました。' }).waitFor();
+      assert.equal(await worker.evaluate(() => chrome.storage.local.get('settings').then(r => r.settings.actionOpensLibrary)), true);
+      assert.equal(await worker.evaluate(() => chrome.action.getTitle({})), 'ライブラリを開く');
+      await library.reload();
+      await library.locator('#sidebar-settings').click();
+      assert.equal(await library.locator('#settings-action-library').isChecked(), true);
+      await library.screenshot({ path: join(run, 'library-toolbar-setting.png'), fullPage: true });
     }
     await context.close(); context = undefined;
   }
   console.log('PASS: fresh-install discovery, visible prompt, stripped auth queries, permission click gesture, decline/no repeat, approved site registration and immediate/reloaded UI. Native Chrome permission approval remains a manual check.');
   console.log('Artifacts:', run);
-} finally { await context?.close(); await new Promise(r => server.close(r)); }
+} finally { releaseImages(); await context?.close(); await new Promise(r => server.close(r)); }

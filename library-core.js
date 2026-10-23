@@ -105,8 +105,8 @@ export function folderCoverEntries(entries, path) {
   const preferred = new Set(pdfs);
   return [...pdfs, ...files.filter(entry => !preferred.has(entry))].slice(0, 4);
 }
-export async function scanDirectory(root, { signal, onProgress = () => {} } = {}) {
-  const entries = [], errors = [], queue = [{ handle: root, path: '' }];
+export async function scanDirectory(root, { signal, recursive = false, onProgress = () => {} } = {}) {
+  const entries = [], errors = [], queue = [{ handle: root, path: '', depth: 0 }];
   while (queue.length) {
     signal?.throwIfAborted();
     const current = queue.shift();
@@ -124,10 +124,13 @@ export async function scanDirectory(root, { signal, onProgress = () => {} } = {}
       };
       for await (const [name, handle] of current.handle.entries()) {
         signal?.throwIfAborted();
+        // Default: selected root plus the files directly inside each course.
+        // Do not even enumerate/read deeper directories without opting in.
+        if (handle.kind === 'directory' && current.depth >= 1 && !recursive) continue;
         const path = current.path ? `${current.path}/${name}` : name;
         const entry = { name, path, parent: current.path, kind: handle.kind, handle, type: handle.kind === 'file' ? fileType(name) : 'folder' };
         entries.push(entry); batch.push(entry);
-        if (handle.kind === 'directory') queue.push({ handle, path });
+        if (handle.kind === 'directory') queue.push({ handle, path, depth: current.depth + 1 });
         if (batch.length === 24) { await collect(); onProgress(entries.length); await new Promise(resolve => setTimeout(resolve, 0)); }
       }
       await collect(); onProgress(entries.length);

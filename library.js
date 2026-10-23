@@ -4,6 +4,7 @@ import { formatSize, scanDirectory, visibleEntries, folderCoverEntries, matching
 import { rootIdentity } from './library-store.js';
 import { LibraryThumbnails } from './library-thumbnails.js';
 import { openInBrowser, canOpenInBrowser } from './library-open.js';
+import { mountUpdateNotice } from './update-notice.js';
 const $ = id => document.getElementById(id);
 const typeNames = { pdf: 'PDF', powerpoint: 'PowerPoint', word: 'Word', excel: 'Excel', csv: 'CSV', tsv: 'TSV', image: '画像', audio: '音声', video: '動画', text: 'テキスト', other: 'その他', folder: 'フォルダ' };
 const icons = { pdf: 'PDF', powerpoint: 'PPT', word: 'DOC', excel: 'XLS', csv: 'CSV', tsv: 'TSV', image: 'IMG', audio: '♫', video: '▶', text: 'TXT', other: 'FILE', folder: '▱' };
@@ -11,6 +12,7 @@ const thumbnails = new LibraryThumbnails();
 let root, rootId, entries = [], metadata = Object.create(null), selected, scanController, generation = 0, limit = 200, view = 'grid';
 let favoritePaths;
 let emphasizeCourseNames = true;
+let readNestedFolders = false;
 let currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings };
 const state = { mode: 'folder', path: '', query: '', types: [], sort: 'modified' };
 function status(text) { $('status').textContent = text; }
@@ -156,6 +158,10 @@ function renderEntries() {
   if (!preview.hidden) { preview.append(node('span', icons[selected.type], 'file-icon')); thumbnails.observe(preview, selected); }
   $('count').textContent = `${result.length}個の項目`;
   $('empty').hidden = result.length > 0 || !$('permission').hidden;
+  $('choose-folder').hidden = !!root;
+  $('folder-start-help').hidden = !!root;
+  $('empty-title').hidden = !root;
+  $('empty-message').hidden = !root;
   $('empty-title').textContent = !root ? '保存先を選んで、はじめましょう' : state.query || state.types.length ? '一致する資料がありません' : state.mode === 'favorites' ? 'お気に入りを集めましょう' : 'このフォルダにはまだ資料がありません';
   $('empty-message').textContent = !root ? '設定の保存先を選択すると、既存のファイルも表示します。' : state.mode === 'favorites' && !state.query && !state.types.length ? 'カード右上の星を押すと、ここに表示されます。' : state.query || state.types.length ? '検索語や種類の絞り込みを変更してください。フォルダ内の検索はサブフォルダも対象です。' : '資料を保存してから「更新」を押してください。';
 }
@@ -174,7 +180,7 @@ async function refresh() {
     if (current !== generation) return;
     root = handle;
     document.body.classList.remove('connected');
-    if (!handle) { entries = []; rootId = null; metadata = Object.create(null); state.path = ''; clearSelection(); render(); status('保存先フォルダを選んでください。ブラウザのダウンロード先は自動では読み取れません。'); return; }
+    if (!handle) { entries = []; rootId = null; metadata = Object.create(null); state.path = ''; clearSelection(); render(); status(''); return; }
     const permission = await handle.queryPermission({ mode: 'read' });
     if (current !== generation) return;
     if (permission !== 'granted') { entries = []; clearSelection(); $('permission').hidden = false; render(); status('フォルダへのアクセス許可が必要です。'); return; }
@@ -188,7 +194,8 @@ async function refresh() {
     const prefix = `library-file:${id}:`;
     for (const [key, value] of Object.entries(stored)) if (key.startsWith(prefix)) metadata[key.slice(prefix.length)] = value;
     document.body.classList.add('connected'); status('フォルダを読み込んでいます…');
-    const result = await scanDirectory(handle, { signal, onProgress: count => { if (current === generation) status(`${count} 件を確認しました…`); } });
+    readNestedFolders = stored.libraryReadNestedFolders === true;
+    const result = await scanDirectory(handle, { signal, recursive: readNestedFolders, onProgress: count => { if (current === generation) status(`${count} 件を確認しました…`); } });
     if (current !== generation) return;
     entries = result.entries;
     if (state.path && !entries.some(entry => entry.path === state.path && entry.kind === 'directory')) { state.path = ''; saveLocation(true); }
@@ -209,6 +216,7 @@ async function renderSettings() {
   $('settings-enabled').checked = currentSettings.enabled;
   $('settings-action-library').checked = currentSettings.actionOpensLibrary;
   $('settings-course-names').checked = emphasizeCourseNames;
+  $('settings-recursive').checked = readNestedFolders;
   $('settings-site').value = currentSettings.site;
   $('settings-folder-state').textContent = currentSettings.saveMode === 'directory' ? `選択したフォルダー：${currentSettings.folderName}` : 'ブラウザのダウンロード先を使用中';
 }
@@ -224,6 +232,15 @@ function leaveSettings() {
   $('sidebar-settings').classList.remove('active'); $('sidebar-settings').setAttribute('aria-pressed', 'false');
 }
 action('sidebar-settings', showSettings);
+$('settings-recursive').addEventListener('change', async () => {
+  try {
+    await chrome.storage.local.set({ libraryReadNestedFolders: $('settings-recursive').checked });
+    $('settings-scan-status').textContent = '読み込む範囲を保存しました。';
+  } catch {
+    $('settings-recursive').checked = readNestedFolders;
+    $('settings-scan-status').textContent = '読み込む範囲を保存できませんでした。もう一度お試しください。';
+  }
+});
 $('settings-course-names').addEventListener('change', async () => {
   try {
     await chrome.storage.local.set({ libraryEmphasizeCourseName: $('settings-course-names').checked });
@@ -233,15 +250,22 @@ $('settings-course-names').addEventListener('change', async () => {
     $('settings-display-status').textContent = '表示設定を保存できませんでした。もう一度お試しください。';
   }
 });
-$('settings-choose-folder').addEventListener('click', async () => {
+async function chooseFolder(event) {
+  const button = event.currentTarget;
+  const message = button.id === 'choose-folder' ? $('folder-choice-status') : $('settings-folder-status');
   try {
+    // Keep the picker directly in the click handler to preserve user activation.
     const handle = await window.showDirectoryPicker({ id: 'webclass-materials', mode: 'readwrite' });
+    button.disabled = true;
     await directoryHandle(handle);
     currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings, saveMode: 'directory', folderName: handle.name };
     delete currentSettings.root; await chrome.storage.local.set({ settings: currentSettings });
-    await renderSettings(); $('settings-folder-status').textContent = '保存先を変更しました。';
-  } catch (error) { $('settings-folder-status').textContent = error.name === 'AbortError' ? '選択を取り消しました。' : '保存先を変更できませんでした。フォルダーへの書き込みを許可してください。'; }
-});
+    await refresh(); await renderSettings(); message.textContent = '保存先を変更しました。';
+  } catch (error) { message.textContent = error.name === 'AbortError' ? '選択を取り消しました。' : '保存先を変更できませんでした。フォルダーへの書き込みを許可してください。'; }
+  finally { button.disabled = false; }
+}
+$('choose-folder').addEventListener('click', chooseFolder);
+$('settings-choose-folder').addEventListener('click', chooseFolder);
 $('settings-use-browser').addEventListener('click', async () => {
   currentSettings = { ...DEFAULTS, ...(await chrome.storage.local.get('settings')).settings, saveMode: 'browser', folderName: '' };
   delete currentSettings.root; await chrome.storage.local.set({ settings: currentSettings });
@@ -300,6 +324,11 @@ action('open-file', () => selected && openInBrowser(selected));
 action('open-folder', () => selected && navigate('folder', selected.parent));
 let updateTimer;
 chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.libraryReadNestedFolders) {
+    readNestedFolders = changes.libraryReadNestedFolders.newValue === true;
+    $('settings-recursive').checked = readNestedFolders;
+    refresh();
+  }
   if (area === 'local' && changes.libraryEmphasizeCourseName) { emphasizeCourseNames = changes.libraryEmphasizeCourseName.newValue !== false; renderCoursePreference(); }
   if (area === 'local' && changes.settings || area === 'session' && changes.lastResult?.newValue?.code === 'saved') { clearTimeout(updateTimer); updateTimer = setTimeout(refresh, 300); }
   if (area === 'local' && rootId) {
@@ -309,8 +338,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
 window.addEventListener('pagehide', () => { scanController?.abort(); thumbnails.clear(); });
-const preferences = await chrome.storage.local.get(['libraryView', 'libraryEmphasizeCourseName']); view = preferences.libraryView === 'list' ? 'list' : 'grid';
+const preferences = await chrome.storage.local.get(['libraryView', 'libraryEmphasizeCourseName', 'libraryReadNestedFolders']); view = preferences.libraryView === 'list' ? 'list' : 'grid';
 emphasizeCourseNames = preferences.libraryEmphasizeCourseName !== false;
+readNestedFolders = preferences.libraryReadNestedFolders === true;
+mountUpdateNotice(chrome);
 $('grid').setAttribute('aria-pressed', String(view === 'grid')); $('list').setAttribute('aria-pressed', String(view === 'list'));
 await refresh();
 const revealPath = new URL(location.href).searchParams.get('reveal');

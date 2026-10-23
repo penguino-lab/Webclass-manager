@@ -10,6 +10,8 @@ function twoPagePDF(title = 'WebClass library preview') {
 }
 export async function checkLibrary(context, id, options, artifacts, errors) {
   await options.evaluate(async pdf => {
+    // This existing suite exercises recursive search. First-run defaults have a separate suite.
+    await chrome.storage.local.set({ libraryReadNestedFolders: true });
     const root = await navigator.storage.getDirectory(), course = await root.getDirectoryHandle('数学'), nested = await course.getDirectoryHandle('補足', { create: true });
     const write = async (dir, name, body) => { const file = await dir.getFileHandle(name, { create: true }), writable = await file.createWritable(); await writable.write(body); await writable.close(); };
     await write(course, '試験対策.pdf', pdf); await write(nested, '演習メモ.txt', '試験対策のメモ');
@@ -39,7 +41,7 @@ export async function checkLibrary(context, id, options, artifacts, errors) {
   await library.locator('#sidebar-settings').click();
   assert.equal(await library.locator('#settings-page').isVisible(), true);
   assert.equal(await library.locator('.sidebar').isVisible(), true);
-  assert.equal(await library.locator('#choose-folder').count(), 0);
+  assert.equal(await library.locator('#choose-folder').isVisible(), false);
   assert.equal(await library.locator('#settings-enabled').isChecked(), true);
   assert.equal(await library.locator('#settings-course-names').isChecked(), true, 'course-name emphasis defaults to ON');
   assert.ok((await library.locator('#settings-site').inputValue()).startsWith('http://127.0.0.1:'));
@@ -211,7 +213,7 @@ export async function checkLibrary(context, id, options, artifacts, errors) {
   await ensurePDFs();
   await library.waitForFunction(async paths => {
     const { scanDirectory } = await import(chrome.runtime.getURL('library-core.js')), { ThumbnailCache } = await import(chrome.runtime.getURL('library-thumbnail-cache.js'));
-    const entries = (await scanDirectory(await navigator.storage.getDirectory())).entries, rootId = new URLSearchParams(location.hash.slice(1)).get('root'), cache = new ThumbnailCache();
+    const entries = (await scanDirectory(await navigator.storage.getDirectory(), { recursive: true })).entries, rootId = new URLSearchParams(location.hash.slice(1)).get('root'), cache = new ThumbnailCache();
     return (await Promise.all(paths.map(path => cache.get(rootId, entries.find(entry => entry.path === path))))).every(Boolean);
   }, pdfCards);
   await library.reload(); await library.locator('#all.active').waitFor(); await ensurePDFs();

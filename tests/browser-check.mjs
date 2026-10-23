@@ -20,6 +20,7 @@ const extension = join(sandbox, 'extension'); await mkdir(extension);
 const files = ['background.js', 'content.js', 'material-ui.js', 'course-ui.js', 'course-ui.css', 'core.js', 'resource-tools.js', 'webclass-adapter.js', 'directory-store.js', 'save-file.js', 'attachment-link.js', 'offscreen.html', 'offscreen.js', 'popup.html', 'popup.js', 'style.css', 'library.html', 'library.css', 'library.js', 'library-core.js', 'library-open.js', 'library-store.js', 'library-thumbnails.js', 'library-thumbnail-cache.js'];
 files.push('typography.css','page-ui.css','page-themes.js','banner-crop.js','page-ui.js','theme-sync.js','extension-theme.css');
 files.push('site-discovery.js','site-onboarding.js','onboarding.html','onboarding.js','onboarding.css');
+files.push('update-notice.js');
 for (const file of files) await copyFile(join(source, file), join(extension, file));
 await cp(join(source, 'vendor'), join(extension, 'vendor'), { recursive: true });
 await cp(join(source, 'icons'), join(extension, 'icons'), { recursive: true });

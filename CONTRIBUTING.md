@@ -62,6 +62,7 @@ node tests/home-ui-browser.mjs
 node tests/onboarding-browser.mjs
 node tests/library-first-run-browser.mjs
 node tests/webclass-updates-browser.mjs
+node tests/wordmark-navigation-browser.mjs
 ```
 
 総合テストは添付・PDF保存、重複・再ダウンロード、講義別整理、ライブラリ検索・プレビュー等を確認します。テーマ専用テストは配色と同期、バナー専用テストはヘッダー画像の切り取りと保持、ホーム専用テストはライブラリバナーとお知らせティッカーを確認します。
@@ -100,3 +101,5 @@ npm run check:distribution
 ```
 
 バージョン定義と利用者向け文書の不一致、古いハッシュ、ハッシュ一覧からの追跡ファイルの欠落がある場合はCIが失敗します。ルートのMarkdown文書とハッシュ一覧自身はハッシュ対象外です。
+
+`wordmark-navigation-browser.mjs` は、ダミーのヘッダーでホーム自身への再遷移を抑え、コース追加・その他のページからのマウス／キーボードによるホーム復帰、リンク先とアクセシビリティ属性の保持、ヘッダー再利用を確認します。実際の大学ページや認証情報は使いません。

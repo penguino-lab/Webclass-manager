@@ -93,6 +93,11 @@
       const label = document.createElement('span'); label.textContent = '講義コードをコピー'; label.setAttribute('role', 'status'); label.setAttribute('aria-live', 'polite'); label.setAttribute('aria-atomic', 'true'); button.append(icon, label);
       button.addEventListener('click', () => copyCode(button, label, code)); title.after(button);
     }
+    const copy = title.nextElementSibling;
+    if (copy?.matches('.wcl-copy-code') && !title.parentElement.matches('.wcl-course-title-row')) {
+      const row = document.createElement('span'); row.className = 'wcl-course-title-row';
+      title.before(row); row.append(title, copy);
+    }
     const home = document.querySelector('a.course-webclass');
     if (home) {
       if (!home.querySelector('.wcl-course-home-label')) {

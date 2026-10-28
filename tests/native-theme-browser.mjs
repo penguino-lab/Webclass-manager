@@ -23,7 +23,7 @@ try {
       .navbar-brand{font-size:18px}.navbar-nav{display:flex;list-style:none;margin:0;padding:0}.navbar-nav>li>a{display:block;padding:15px}
       .navbar-header{float:left}.navbar-right{float:right}.navbar-collapse{clear:both}.course-name{display:block}.navbar:after{content:'';display:block;clear:both}
       @media(max-width:767px){.navbar-header,.navbar-right{float:none}}
-      </style><nav class="navbar navbar-default"><div class="navbar-header"><div class="navbar-brand"><a class="course-webclass" href="/webclass/">WebClass</a><span class="course-name">Dummy course</span><button class="wcl-copy-code">講義コードをコピー</button></div></div>
+      </style><nav class="navbar navbar-default"><div class="navbar-header"><div class="navbar-brand"><a class="course-webclass" href="/webclass/">WebClass</a><span class="course-name">Dummy course_demo123</span></div></div>
       <ul class="navbar-nav navbar-right"><li id="notification-dropdown-area"><a href="#messages">通知</a></li><li><a href="#language">言語</a></li></ul><div class="navbar-collapse"><ul class="navbar-nav"><li><a href="#materials">教材</a></li></ul></div></nav><main><h1>Dummy materials</h1></main></html>`;
     await context.route('http://fixture.test/**', route => route.fulfill({ contentType: 'text/html', body: markup }));
     await page.addInitScript(() => {
@@ -46,6 +46,7 @@ try {
       await page.addStyleTag({ content: `.navbar-default{background-color:${background};border-color:#e7e7e7}.navbar-default .navbar-brand,.navbar-default .navbar-nav>li>a,.course-name,.course-webclass,.course-webclass:hover{color:${nativeColor}}` });
       await page.addScriptTag({ path: resolve(root, 'page-themes.js') });
       await page.addScriptTag({ path: resolve(root, syncOnly ? 'theme-sync.js' : 'page-ui.js') });
+      if (!syncOnly) await page.addScriptTag({ path: resolve(root, 'course-ui.js') });
     }
     const theme = id => page.evaluate(id => chrome.storage.local.set({ pageTheme: id }), id);
     const color = selector => page.locator(selector).first().evaluate(el => getComputedStyle(el).color);
@@ -54,6 +55,22 @@ try {
     await page.waitForFunction(() => document.documentElement.dataset.wclTheme === 'silver');
     assert.equal(await page.locator('.wcl-theme-toggle').innerText(), 'テーマ');
     const bounds = await page.locator('.navbar').boundingBox();
+    const assertCopyPosition = async () => {
+      const title = await page.locator('.course-name').boundingBox(), copy = await page.locator('#wcl-copy-code').boundingBox();
+      assert.ok(copy.x >= title.x + title.width - 1, 'copy stays to the right of the course title');
+      assert.ok(copy.y < title.y + title.height && copy.y + copy.height > title.y, 'copy does not fall below the course title');
+      assert.equal(await page.locator('.wcl-course-title-row').count(), 1);
+    };
+    await assertCopyPosition();
+    for (const width of [1920, 1440, 1024, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.locator('.course-name').evaluate(el => { el.textContent = '検証用の長い講義名称（金1・金2、担当教員、2026年度後期前半）_demo123'; });
+      await page.evaluate(() => { WebClassCourseUI.update(); WebClassCourseUI.update(); });
+      await assertCopyPosition();
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'long course title does not overflow the viewport');
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.locator('.course-name').evaluate(el => { el.textContent = 'Dummy course_demo123'; });
     for (const id of ['silver', 'default', 'charcoal', 'forest', 'red', 'lightblue', 'gold', 'default']) {
       await theme(id);
       await page.waitForFunction(id => document.documentElement.dataset.wclTheme === id, id);

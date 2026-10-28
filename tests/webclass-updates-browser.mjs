@@ -80,8 +80,8 @@ try {
   const library = await context.newPage(); library.on('pageerror', error => errors.push(String(error)));
   await library.goto(new URL('library.html', worker.url()).href);
   await library.locator('#choose-folder:visible').waitFor();
-  assert.equal(await library.locator('#header-version').textContent(), 'v' + manifest.version);
-  assert.equal(await library.locator('#header-version').isVisible(), true);
+  assert.equal(await library.locator('#header-version').count(), 0, 'header has no version label');
+  assert.equal(await library.locator('#installed-version').textContent(), '現在のバージョン：' + manifest.version);
   assert.equal(libraryRequests, 0, 'library shares the background lock instead of starting another fetch');
   await worker.evaluate(() => { globalThis.holdRelease = false; globalThis.releaseFetch(); });
   const notice = page.locator('#wcl-release-notice');
@@ -117,16 +117,14 @@ try {
   await library.locator('#sidebar-settings').click(); await library.locator('#check-update').click();
   await notice.filter({ hasText: '99.0.2' }).waitFor();
   assert.equal(libraryRequests, 1, 'explicit settings check can refresh immediately');
-  assert.equal(await library.locator('#header-version').textContent(), 'v' + manifest.version, 'header always shows installed version');
   await page.setViewportSize({ width: 390, height: 844 }); await page.evaluate(() => scrollTo(0, 0));
   const mobileBox = await notice.boundingBox(); assert.ok(mobileBox.x >= 0 && mobileBox.x + mobileBox.width <= 390);
   await page.screenshot({ path: join(run, 'webclass-mobile.png'), fullPage: true });
   await library.setViewportSize({ width: 390, height: 844 }); await library.evaluate(() => scrollTo(0, 0));
-  assert.equal(await library.locator('#header-version').isVisible(), true);
   assert.equal(await library.locator('.topbar').evaluate(el => el.getBoundingClientRect().height), 74);
-  await library.screenshot({ path: join(run, 'library-version-mobile.png'), fullPage: true });
+  await library.screenshot({ path: join(run, 'library-header-mobile.png'), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('PASS: nonblocking checks, shared cross-context lock/cache, WebClass/library live banners, dismissal/new versions, no frame duplicates/layout shift, installed header version, neutral unavailable rows in seven themes, details links and mobile fit.');
+  console.log('PASS: nonblocking checks, shared cross-context lock/cache, WebClass/library live banners, dismissal/new versions, no frame duplicates/layout shift, version in settings, neutral unavailable rows in seven themes, details links and mobile fit.');
   console.log('Artifacts:', run);
 } finally { await context?.close(); await new Promise(resolve => server.close(resolve)); }
 

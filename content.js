@@ -98,17 +98,18 @@
   }
   document.addEventListener('webclass-library-bulk-download', async () => {
     await ready;
-    if (!active()) return;
+    if (!active()) { finishBulk(); return; }
     notice('一括ダウンロードを準備しています…', { progress: 0, persistent: true });
     const context = await localContext();
     // The worker derives the material URLs from Chrome's verified sender.
     let resources;
     try {
       resources = await WebClassMaterialUI.collectChapterPDFs((current, total) => {
-        notice(`教材のPDFを確認中… ${current}/${total}`, { persistent: true });
+        notice(`教材の資料を確認中… ${current}/${total}`, { persistent: true });
       });
     } catch (error) {
-      finishBulk(); notice(error.message, { openManager: true, closable: true }); return;
+      resources = Array.isArray(error.resources) ? error.resources : [];
+      notice(error.message || 'PDFを確認できないため、添付資料のみ保存します。', { persistent: true });
     }
     const result = await send({ type: 'bulk-download', context, resources });
     if (!result?.ok) {

@@ -30,6 +30,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test home wordmark navigation
         run: node tests/wordmark-navigation-browser.mjs
+      - name: Test attachment-only bulk saves and content duplicates
+        run: node tests/bulk-download-browser.mjs
       - name: Test library first run and update notices
         run: node tests/library-first-run-browser.mjs
         env:

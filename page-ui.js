@@ -65,7 +65,7 @@
   const accountSelector = '.navbar a[title="アカウントメニュー"]';
   let current = themes[0], observer, queued = false, dayTimer, selected = false, controlId = 0;
   const controls = new Set();
-  const inactiveWordmarks = new WeakSet();
+  const wordmarkStates = new WeakMap();
   const libraryButtons = new WeakSet();
   const homeNews = new Map();
   let release = {}, dismissedRelease = '', releaseBox, releaseTouched = false, dismissalTouched = false;
@@ -276,6 +276,18 @@
     });
     control.append(toggle,menu); controls.add(control); notification.before(control);
   }
+  function isHomeSelfLink(wordmark) {
+    if (!wordmark.matches('a[href]')) return false;
+    try {
+      const current = new URL(location.href), target = new URL(wordmark.getAttribute('href'), document.baseURI);
+      const homePath = path => path.replace(/\/index\.php\/?$/i, '/').replace(/\/?$/, '/');
+      if (!/\/webclass\/$/i.test(homePath(current.pathname))) return false;
+      if (current.origin !== target.origin || homePath(current.pathname) !== homePath(target.pathname)) return false;
+      // WebClass regenerates this access-check value even for the same home screen.
+      for (const url of [current, target]) { url.searchParams.delete('acs_'); url.searchParams.sort(); }
+      return current.searchParams.toString() === target.searchParams.toString() && current.hash === target.hash;
+    } catch { return false; }
+  }
   function header() {
     for (const nav of document.querySelectorAll('.navbar')) {
       let button = nav.querySelector('.wcl-library-button');
@@ -293,11 +305,20 @@
       const brand = nav.querySelector('.navbar-brand');
       if (!brand || brand.textContent.trim() !== 'WebClass') continue;
       const wordmark = brand.matches('a') ? brand : brand.querySelector('a') || brand;
-      brand.classList.add('wcl-home-brand'); wordmark.classList.add('wcl-home-wordmark');
-      wordmark.removeAttribute('href'); wordmark.removeAttribute('tabindex'); wordmark.removeAttribute('role');
-      if (!inactiveWordmarks.has(wordmark)) {
-        wordmark.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();},true);
-        inactiveWordmarks.add(wordmark);
+      brand.classList.add('wcl-home-brand');
+      let state = wordmarkStates.get(wordmark);
+      if (!state) {
+        state = { tabindex: wordmark.getAttribute('tabindex'), disabled: wordmark.getAttribute('aria-disabled') };
+        wordmarkStates.set(wordmark, state);
+        wordmark.addEventListener('click', event => {
+          if (isHomeSelfLink(wordmark)) { event.preventDefault(); event.stopImmediatePropagation(); }
+        }, true);
+      }
+      const inactive = isHomeSelfLink(wordmark);
+      wordmark.classList.toggle('wcl-home-wordmark', inactive);
+      for (const [attribute, value] of [['tabindex', inactive ? '-1' : state.tabindex], ['aria-disabled', inactive ? 'true' : state.disabled]]) {
+        if (value === null) wordmark.removeAttribute(attribute);
+        else wordmark.setAttribute(attribute, value);
       }
     }
     for (const control of controls) if (!control.isConnected) controls.delete(control);

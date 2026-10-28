@@ -28,6 +28,8 @@ jobs:
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Test home wordmark navigation
+        run: node tests/wordmark-navigation-browser.mjs
       - name: Test library first run and update notices
         run: node tests/library-first-run-browser.mjs
         env:

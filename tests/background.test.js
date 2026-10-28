@@ -5,7 +5,7 @@ const session = {};
 const saved = { enabled:true, root:'WebClass', site:'https://example.edu/webclass/', selector:'' };
 let overrides = {};
 const localValues = {};
-let releaseFetch = async () => ({ ok: true, json: async () => ({ name: 'Webclass manager', version: '0.9.4' }) });
+let releaseFetch = async () => ({ ok: true, json: async () => ({ manifest_version: 3, name: 'Webclass manager', version: '0.9.4' }) });
 globalThis.fetch = (...args) => releaseFetch(...args);
 globalThis.chrome = {
   action:{onClicked:event(),setTitle:async value=>{session.actionTitle=value.title;}},

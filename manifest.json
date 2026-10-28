@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Webclass manager",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "minimum_chrome_version": "133",
   "description": "WebClassの講義資料を講義ごとに保存し、ライブラリで閲覧・検索できます。",
   "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'; worker-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:"},

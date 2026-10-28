@@ -18,7 +18,8 @@ export function createUpdateChecker({ storage, fetchManifest = fetch, now = Date
       });
       if (!response.ok) throw Error('Update check failed');
       const manifest = await response.json();
-      if (manifest.name !== 'Webclass manager' || !versionParts(manifest.version)) throw Error('Invalid release');
+      // The fixed HTTPS endpoint identifies the project; display names may change.
+      if (manifest.manifest_version !== 3 || !versionParts(manifest.version)) throw Error('Invalid release');
       result = { version: manifest.version, attemptedAt: now(), failed: false };
     } catch {
       // Keep a previously confirmed update visible when offline. Never block the library.

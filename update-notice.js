@@ -45,8 +45,6 @@ export function mountUpdateNotice(api) {
   const checker = createUpdateChecker({ storage: api.storage.local });
   let latest = '';
   $('installed-version').textContent = `現在のバージョン：${installed}`;
-  $('header-version').textContent = `v${installed}`;
-  $('header-version').title = `Webclass manager ${installed}`;
   function render(version, dismissed) {
     latest = version;
     const available = isNewerVersion(version, installed);

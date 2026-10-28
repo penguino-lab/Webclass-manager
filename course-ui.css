@@ -6,6 +6,16 @@
   .navbar-header:has(.course-name){max-width:calc(100% - 264px)}
   .navbar-brand:has(.course-name){max-width:100%;white-space:normal;height:auto!important}
   @media(min-width:768px){.navbar-brand:has(.course-name){margin-left:0!important;padding-left:0!important}}
+  /* The native header uses competing floats. Give its utility menu a fixed
+     first-row slot, and let the title/copy row use the full width beneath it. */
+  @media(min-width:768px){
+    .navbar>.container:has(>.navbar-header .course-name){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+    .navbar>.container:has(>.navbar-header .course-name)::before,.navbar>.container:has(>.navbar-header .course-name)::after{display:none}
+    .navbar>.container>.navbar-header:has(.course-name),.navbar>.container>.navbar-header>.navbar-brand:has(.course-name){display:contents}
+    .navbar>.container>.navbar-header>.navbar-brand>a.course-webclass{grid-column:1;grid-row:1}
+    .navbar>.container>.navbar-header>.navbar-brand>:is(.wcl-course-title-row,.course-name){grid-column:1 / -1;grid-row:2;min-width:0;justify-self:start}
+    .navbar>.container:has(>.navbar-header .course-name)>.navbar-right{grid-column:2;grid-row:1;justify-self:end;float:none!important}
+  }
   a.course-webclass:hover{opacity:.85}
   .course-name{text-decoration:none!important;cursor:text!important}
   .wcl-course-title-row{display:inline-flex;align-items:baseline;max-width:100%;vertical-align:middle}

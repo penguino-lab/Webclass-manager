@@ -22,8 +22,10 @@
   }));
   const keys = ['gradient','text','border','accent','soft','canvas','surface','ink','muted','line','link','hover','heading'];
   globalThis.WebClassTheme ||= Object.freeze({
+    defaultId: 'silver',
     apply(id) {
-      const theme = globalThis.WebClassPageThemes.find(theme => theme.id === id) || globalThis.WebClassPageThemes[0];
+      const theme = globalThis.WebClassPageThemes.find(theme => theme.id === id)
+        || globalThis.WebClassPageThemes.find(theme => theme.id === 'silver');
       const root = document.documentElement;
       root.dataset.wclTheme = theme.id;
       for (const key of keys) {

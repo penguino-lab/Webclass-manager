@@ -61,7 +61,7 @@ try {
     await chrome.storage.local.set({ settings: { enabled: true, site, saveMode: 'directory' } });
   }, site);
   await assert.doesNotReject(async () => {
-    await options.waitForFunction(async () => (await chrome.scripting.getRegisteredContentScripts()).some(s => s.js.includes('content.js')));
+    await options.waitForFunction(async () => (await chrome.scripting.getRegisteredContentScripts()).some(s => s.js?.includes('content.js')));
   });
   for (const [variant, expected] of [['only', 1], ['same', 1], ['different', 2], ['mixed', 4], ['same-url', 4], ['stuck', 3]]) {
     const page = await context.newPage();

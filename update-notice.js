@@ -18,7 +18,7 @@ export function createUpdateChecker({ storage, fetchManifest = fetch, now = Date
       });
       if (!response.ok) throw Error('Update check failed');
       const manifest = await response.json();
-      if (manifest.name !== 'WebClass Library Manager' || !versionParts(manifest.version)) throw Error('Invalid release');
+      if (manifest.name !== 'Webclass manager' || !versionParts(manifest.version)) throw Error('Invalid release');
       result = { version: manifest.version, attemptedAt: now(), failed: false };
     } catch {
       // Keep a previously confirmed update visible when offline. Never block the library.
@@ -46,7 +46,7 @@ export function mountUpdateNotice(api) {
   let latest = '';
   $('installed-version').textContent = `現在のバージョン：${installed}`;
   $('header-version').textContent = `v${installed}`;
-  $('header-version').title = `WebClass Library Manager ${installed}`;
+  $('header-version').title = `Webclass manager ${installed}`;
   function render(version, dismissed) {
     latest = version;
     const available = isNewerVersion(version, installed);

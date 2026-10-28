@@ -81,7 +81,7 @@
       box.append(document.createElement('br'), retry);
     }
     if (openManager) {
-      const open = document.createElement('button'); open.type = 'button'; open.textContent = '開く'; open.title = 'Library Managerを開く';
+      const open = document.createElement('button'); open.type = 'button'; open.textContent = '開く'; open.title = 'Webclass managerを開く';
       open.addEventListener('click', () => { send({ type: 'open-library' }); box.remove(); });
       box.append(document.createElement('br'), open);
     }

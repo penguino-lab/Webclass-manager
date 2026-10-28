@@ -4,7 +4,7 @@ import { createUpdateChecker, isNewerVersion, UPDATE_MANIFEST_URL } from '../upd
 
 function fixture() {
   const values = {};
-  let time = 1000000, calls = 0, remote = { name: 'WebClass Library Manager', version: '0.10.0' }, offline = false;
+  let time = 1000000, calls = 0, remote = { name: 'Webclass manager', version: '0.10.0' }, offline = false;
   const checker = createUpdateChecker({
     storage: { get: async () => structuredClone(values), set: async value => Object.assign(values, value) },
     now: () => time,
@@ -45,7 +45,7 @@ test('invalid manifests never announce a version and failures are cached', async
   const f = fixture(); f.remote({ name: 'Other extension', version: '99.0' });
   assert.deepEqual((await f.checker.check()).version, '');
   await f.checker.check(); assert.equal(f.calls(), 1);
-  f.remote({ name: 'WebClass Library Manager', version: '<img>' });
+  f.remote({ name: 'Webclass manager', version: '<img>' });
   assert.equal((await f.checker.check({ force: true })).failed, true);
 });
 
@@ -57,7 +57,7 @@ test('independent background and library contexts coalesce with a shared lock an
   } };
   const options = { locks, now: () => 1000000,
     storage: { get: async () => structuredClone(values), set: async v => Object.assign(values, v) },
-    fetchManifest: async () => { calls++; return { ok: true, json: async () => ({ name: 'WebClass Library Manager', version: '0.10.0' }) }; }
+    fetchManifest: async () => { calls++; return { ok: true, json: async () => ({ name: 'Webclass manager', version: '0.10.0' }) }; }
   };
   const background = createUpdateChecker(options), library = createUpdateChecker(options);
   const results = await Promise.all([background.check(), library.check(), createUpdateChecker(options).check()]);

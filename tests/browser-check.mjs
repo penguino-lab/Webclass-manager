@@ -39,11 +39,11 @@ try {
   let worker;
   for (let attempt = 0; attempt < 100 && !worker; attempt++) {
     for (const candidate of context.serviceWorkers()) {
-      try { if (await candidate.evaluate(() => chrome.runtime.getManifest().name) === 'WebClass Library Manager') { worker = candidate; break; } } catch {}
+      try { if (await candidate.evaluate(() => chrome.runtime.getManifest().name) === 'Webclass manager') { worker = candidate; break; } } catch {}
     }
     if (!worker) await new Promise(resolve => setTimeout(resolve, 50));
   }
-  assert.ok(worker, 'WebClass Library Manager service worker started');
+  assert.ok(worker, 'Webclass manager service worker started');
   const id = worker.url().split('/')[2], options = await context.newPage();
   const errors = [];
   options.on('pageerror', error => errors.push(String(error)));

@@ -28,7 +28,7 @@ try {
   let remoteVersion = installed, requests = 0;
   await context.route('https://raw.githubusercontent.com/penguino-lab/Webclass-manager/main/manifest.json', route => {
     requests++;
-    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ name: 'WebClass Library Manager', version: remoteVersion }) });
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ name: 'Webclass manager', version: remoteVersion }) });
   });
   const page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(String(error)));

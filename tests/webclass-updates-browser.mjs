@@ -27,7 +27,7 @@ await writeFile(join(extension, 'test-transport.js'), `
   globalThis.fetch = async () => {
     globalThis.releaseCalls++;
     if (globalThis.holdRelease) await new Promise(resolve => { globalThis.releaseFetch = resolve; });
-    return { ok: true, json: async () => ({ name: 'Webclass manager', version: globalThis.remoteVersion }) };
+    return { ok: true, json: async () => ({ manifest_version: 3, name: 'Webclass manager', version: globalThis.remoteVersion }) };
   };
 `);
 const server = http.createServer((req, res) => {
@@ -57,7 +57,7 @@ try {
   let libraryRequests = 0;
   await context.route('https://raw.githubusercontent.com/penguino-lab/Webclass-manager/main/manifest.json', route => {
     libraryRequests++;
-    return route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ name: 'Webclass manager', version: '99.0.2' }) });
+    return route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ manifest_version: 3, name: 'Webclass manager', version: '99.0.2' }) });
   });
   const page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(String(error)));

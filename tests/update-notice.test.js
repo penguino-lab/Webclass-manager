@@ -4,7 +4,7 @@ import { createUpdateChecker, isNewerVersion, UPDATE_MANIFEST_URL } from '../upd
 
 function fixture() {
   const values = {};
-  let time = 1000000, calls = 0, remote = { name: 'Webclass manager', version: '0.10.0' }, offline = false;
+  let time = 1000000, calls = 0, remote = { manifest_version: 3, name: 'Webclass manager', version: '0.10.0' }, offline = false;
   const checker = createUpdateChecker({
     storage: { get: async () => structuredClone(values), set: async value => Object.assign(values, value) },
     now: () => time,
@@ -25,6 +25,16 @@ test('release versions compare numerically and reject malformed remote versions'
   assert.equal(isNewerVersion('0.9.2', '0.10.0'), false);
   for (const value of ['99<script>', '1.2-beta', '99999.1', '', null, {}]) assert.equal(isNewerVersion(value, '0.9.2'), false);
 });
+
+test('release identity does not depend on the extension display name', async () => {
+  for (const name of ['WebClass Library Manager', 'Webclass manager', 'Future display name']) {
+    const f = fixture();
+    f.remote({ manifest_version: 3, name, version: '0.9.7' });
+    const result = await f.checker.check();
+    assert.equal(result.failed, false);
+    assert.equal(result.version, '0.9.7');
+  }
+});
 test('automatic checks share an in-flight fetch and cache success for one minute; manual check refreshes', async () => {
   const f = fixture();
   const results = await Promise.all([f.checker.check(), f.checker.check(), f.checker.check()]);
@@ -42,10 +52,10 @@ test('offline checks retain a known update and retry after one minute', async ()
   f.advance(60 * 1000); await f.checker.check(); assert.equal(f.calls(), 3);
 });
 test('invalid manifests never announce a version and failures are cached', async () => {
-  const f = fixture(); f.remote({ name: 'Other extension', version: '99.0' });
+  const f = fixture(); f.remote({ manifest_version: 2, name: 'Webclass manager', version: '99.0' });
   assert.deepEqual((await f.checker.check()).version, '');
   await f.checker.check(); assert.equal(f.calls(), 1);
-  f.remote({ name: 'Webclass manager', version: '<img>' });
+  f.remote({ manifest_version: 3, name: 'Webclass manager', version: '<img>' });
   assert.equal((await f.checker.check({ force: true })).failed, true);
 });
 
@@ -57,7 +67,7 @@ test('independent background and library contexts coalesce with a shared lock an
   } };
   const options = { locks, now: () => 1000000,
     storage: { get: async () => structuredClone(values), set: async v => Object.assign(values, v) },
-    fetchManifest: async () => { calls++; return { ok: true, json: async () => ({ name: 'Webclass manager', version: '0.10.0' }) }; }
+    fetchManifest: async () => { calls++; return { ok: true, json: async () => ({ manifest_version: 3, name: 'Webclass manager', version: '0.10.0' }) }; }
   };
   const background = createUpdateChecker(options), library = createUpdateChecker(options);
   const results = await Promise.all([background.check(), library.check(), createUpdateChecker(options).check()]);

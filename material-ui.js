@@ -144,12 +144,15 @@
       (document.body || document.documentElement).append(hint);
     }
   }
-  function visiblePDFs() {
-    const found = [];
+  function materialSnapshot() {
+    const found = [], documents = [];
+    let ready = true;
     const visit = win => {
       try {
         const doc = win.document, page = new URL(doc.URL);
         if (page.origin !== location.origin) return;
+        documents.push(doc);
+        if (doc.readyState && doc.readyState !== 'complete') ready = false;
         if (page.pathname.endsWith('/loadit.php') && page.searchParams.get('action') === 'pdfViewer') {
           const file = page.searchParams.get('file');
           if (file) {
@@ -158,10 +161,10 @@
           }
         }
         for (let i = 0; i < win.frames.length; i++) visit(win.frames[i]);
-      } catch { /* A navigating or external frame is not a usable PDF. */ }
+      } catch { ready = false; /* Do not reuse a PDF while a frame is navigating. */ }
     };
-    visit(window.top);
-    return [...new Set(found)];
+    visit(window.top.frames.webclass_content || window.top);
+    return { urls: [...new Set(found)], documents, ready };
   }
   async function collectChapterPDFs(report = () => {}) {
     const controls = [...document.querySelectorAll('#TOCLayout input[name="clickpage"],#TOCLayout button[name="clickpage"]')].filter(el => !el.disabled);
@@ -173,19 +176,25 @@
         report(index + 1, controls.length);
         const row = control.closest('tr');
         const current = row.matches('.bkkhaki,.active,[aria-current="true"]');
-        const previous = visiblePDFs().join('|');
+        const previous = materialSnapshot();
         if (!current) { control.click(); changed = true; }
-        let urls = [], stable = '', stableSince = 0;
+        let urls = [], stable = null, stableSince = 0, loaded = false;
         const deadline = Date.now() + 10000;
         while (Date.now() < deadline) {
           await new Promise(resolve => setTimeout(resolve, 150));
-          const next = visiblePDFs(), key = next.join('|');
-          if (key && (current || key !== previous)) {
+          const next = materialSnapshot(), key = next.urls.join('|');
+          const navigated = next.documents.some(doc => !previous.documents.includes(doc));
+          if (next.ready && (current || navigated)) {
             if (key !== stable) { stable = key; stableSince = Date.now(); }
-            if (Date.now() - stableSince >= 450) { urls = next; break; }
-          } else { stable = ''; stableSince = 0; }
+            if (Date.now() - stableSince >= 450) { urls = next.urls; loaded = true; break; }
+          } else { stable = null; stableSince = 0; }
         }
-        if (!urls.length) throw Error('章のPDFを確認できませんでした。PDFの表示後にもう一度お試しください。');
+        // A loaded chapter may contain attachments or HTML and no PDF at all.
+        if (!loaded) {
+          const error = Error('章の読み込みを確認できませんでした。確認済みのPDFと添付資料を保存します。');
+          error.resources = resources;
+          throw error;
+        }
         const material = clean(document.querySelector('#WsTitle h2')?.textContent) || '教材';
         const section = [clean(row.querySelector('.wcl-section')?.textContent), clean(row.querySelector('.wcl-title-button')?.textContent)].filter(Boolean).join(' ');
         for (const url of urls) resources.push({ kind: 'pdf', url, name: [material, section].filter(Boolean).join('_') + '.pdf' });

@@ -8,9 +8,10 @@ export function resourceExtension(name = '') {
 export function canonicalResourceKey(value, name = '') {
   try {
     const url = new URL(value);
-    const file = url.searchParams.get('file');
-    const path = decodeURIComponent(file || url.pathname).replaceAll('\\', '/').replace(/\/+/g, '/').toLocaleLowerCase();
-    return path || `${url.origin.toLocaleLowerCase()}|${String(name).trim().toLocaleLowerCase()}`;
+    // Query parameters and path case can select different files. Content hashes
+    // below the fetch layer, rather than a guessed path, decide duplication.
+    url.hash = '';
+    return url.href;
   } catch {
     return String(value || name).trim().toLocaleLowerCase();
   }

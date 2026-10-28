@@ -13,7 +13,7 @@ function rememberBlob(key, blob, lifetime = 120000) {
 }
 async function responseFor(url, site) {
   if (!inSite(url, site)) throw fail('登録サイト外への保存要求です。');
-  const response = await fetch(url, { credentials: 'include', cache: 'no-store', redirect: 'follow' });
+  const response = await fetch(url, { credentials: 'include', cache: 'no-store', redirect: 'follow', signal: AbortSignal.timeout(30000) });
   if (!response.ok || !inSite(response.url, site)) throw fail('資料を取得できませんでした。WebClassへのログインを確認してください。');
   return response;
 }
@@ -28,7 +28,7 @@ async function resolvedResource(resource, job) {
   if (resource.kind === 'attachment') {
     const page = await responseFor(url, job.site);
     const link = attachmentLink(await page.text(), page.url, url, job.site, job.courseId);
-    url = link.url; name ||= link.name;
+    url = link.url; name = link.name || name;
   }
   return { url, name: name || resourceName(url), kind: resource.kind };
 }
@@ -126,7 +126,7 @@ async function perform(job) {
   await chrome.runtime.sendMessage({ type: 'save-result', jobId: job.id, code: saved.existing ? 'duplicate' : 'saved', path: saved.path });
 }
 async function bulkPerform(job) {
-  const discovery = await discover(job), discovered = [...(job.resources || []), ...discovery.found], unique = new Set(), resources = [];
+  const discovery = await discover(job), discovered = [...discovery.found, ...(job.resources || [])], unique = new Set(), resources = [];
   let failed = discovery.failed, skipped = 0;
   for (const item of discovered) {
     try {
@@ -135,7 +135,7 @@ async function bulkPerform(job) {
     } catch { failed++; }
   }
   let saved = 0;
-  const contentHashes = new Set();
+  const contentHashes = new Set(), usedNames = new Set();
   const handle = job.saveMode === 'directory' ? await directoryHandle() : null;
   if (job.saveMode === 'directory' && (!handle || await handle.queryPermission({ mode: 'readwrite' }) !== 'granted')) throw fail('保存先への書き込みを許可してください。');
   for (const [index, resource] of resources.entries()) {
@@ -147,10 +147,17 @@ async function bulkPerform(job) {
       const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()))]
         .map(value => value.toString(16).padStart(2, '0')).join('');
       if (contentHashes.has(digest)) { skipped++; continue; }
-      contentHashes.add(digest);
+      // Keep the attachment's original name. Different bytes with the same name
+      // must both be saved, while identical bytes at different URLs are skipped.
+      const originalName = resource.name;
+      let suffix = 1;
+      while (usedNames.has(resource.name.toLocaleLowerCase())) {
+        resource.name = originalName.replace(/(\.[^.]*)?$/, (_, extension = '') => ` (${++suffix})${extension}`);
+      }
       if (job.saveMode === 'directory') {
         const result = await saveInDirectory(handle, job.course, resource.name, blob.stream());
         result.existing ? skipped++ : saved++;
+        if (!result.existing) { contentHashes.add(digest); usedNames.add(resource.name.toLocaleLowerCase()); }
       } else {
         const path = destination({}, job.course, resource.name);
         const existing = (await chrome.downloads.search({ state: 'complete', exists: true, limit: 100, orderBy: ['-startTime'] }))
@@ -158,6 +165,7 @@ async function bulkPerform(job) {
         if (existing) { skipped++; continue; }
         const blobUrl = rememberBlob(`${job.id}:${index}`, blob);
         await chrome.downloads.download({ url: blobUrl, filename: path, conflictAction: 'uniquify', saveAs: false }); saved++;
+        contentHashes.add(digest); usedNames.add(resource.name.toLocaleLowerCase());
       }
     } catch { failed++; }
   }

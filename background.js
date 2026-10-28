@@ -286,7 +286,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     return true;
   }
   if (!['intent', 'page', 'resolve-course', 'direct-download', 'bulk-download', 'preview-submission', 'open-download-location', 'open-library'].includes(message?.type)) return;
-  serial(async () => {
+  const handleMessage = async () => {
     const s = await settings();
     // Old framesets can reuse an about:blank document after changing its location.
     // Verify the live frame via Chrome, never trust a URL supplied in the message.
@@ -321,7 +321,11 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       page: await digest(sender.url), target: target ? await digest(target.href) : '', fallback: message.fallback === true, time: now };
     await chrome.storage.session.set({ intents: [...intents.filter(i => now - i.time <= TTL), intent].slice(-100) });
     await status('waiting'); return { ok: true };
-  }).then(reply, () => reply({ ok: false, error: '操作を開始できませんでした。拡張とWebClassを再読み込みしてください。' }));
+  };
+  // Opening a tab does not mutate download state. Keep navigation responsive
+  // even when a save, preview, or script injection is still pending.
+  (message.type === 'open-library' ? handleMessage() : serial(handleMessage))
+    .then(reply, () => reply({ ok: false, error: '操作を開始できませんでした。拡張とWebClassを再読み込みしてください。' }));
   return true;
 });
 chrome.tabs.onRemoved.addListener(tab => onboarding.removeTab(tab).catch(console.error));

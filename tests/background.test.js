@@ -95,6 +95,40 @@ test('setup window and URL info stay responsive while the download queue is bloc
   }
 });
 const sender = { id:'test-extension',tab:{id:1},url:'https://example.edu/webclass/course?id=1' };
+test('home library opens while a preview is pending and still validates the sender', async () => {
+  const call = (message, from = sender) => new Promise(resolve => chrome.runtime.onMessage.listeners[0](message, from, resolve));
+  const originalSend = chrome.runtime.sendMessage, originalCreate = chrome.tabs.create;
+  let release, started, pendingPreview, created = 0, timeout;
+  const began = new Promise(resolve => { started = resolve; });
+  const blocked = new Promise(resolve => { release = resolve; });
+  chrome.runtime.sendMessage = async message => {
+    if (message.type === 'preview-job') { started(); await blocked; }
+    return originalSend(message);
+  };
+  chrome.tabs.create = async options => { created++; return originalCreate(options); };
+  try {
+    pendingPreview = call({ type: 'preview-submission', url: 'https://example.edu/webclass/download.php/report.txt', name: 'report.txt' });
+    await began;
+    const result = await Promise.race([
+      call({ type: 'open-library' }),
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(Error('library waited for preview')), 500); })
+    ]);
+    clearTimeout(timeout);
+    assert.deepEqual(result, { ok: true });
+    assert.equal(session.createdTab.url, 'chrome-extension://test-extension/library.html');
+    assert.equal(created, 1);
+    for (const from of [{ ...sender, id: 'another-extension' }, { ...sender, tab: undefined }, { ...sender, url: 'https://outside.example/' }]) {
+      assert.deepEqual(await call({ type: 'open-library' }, from), { ok: false });
+    }
+    assert.equal(created, 1, 'untrusted requests cannot open a tab');
+    chrome.tabs.create = async () => { throw Error('tab creation failed'); };
+    assert.equal((await call({ type: 'open-library' })).ok, false);
+  } finally {
+    clearTimeout(timeout);
+    release(); await pendingPreview;
+    chrome.runtime.sendMessage = originalSend; chrome.tabs.create = originalCreate;
+  }
+});
 function intent() { return new Promise(resolve=>chrome.runtime.onMessage.listeners[0]({type:'intent',course:{name:'数学'},target:'https://example.edu/download/1'},sender,resolve)); }
 function download(overrides={}) {
   return new Promise(resolve => {

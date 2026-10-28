@@ -19,12 +19,12 @@ try {
     const nativeColor = native === 'blue' ? '#ffffff' : '#777777';
     const background = native === 'blue' ? '#1e6ecc' : '#f8f8f8';
     const markup = `<!doctype html><html lang="ja" data-wcl-course-ui><meta charset="utf-8"><style>
-      body{margin:0;font:16px sans-serif;color:#333}.navbar{min-height:160px;padding:16px;box-sizing:border-box}
-      .navbar-brand{font-size:18px}.navbar-nav{display:flex;list-style:none;margin:0;padding:0}.navbar-nav>li>a{display:block;padding:15px}
+      body{margin:0;font:16px sans-serif;color:#333}.navbar{min-height:50px;box-sizing:border-box}.container{box-sizing:border-box;margin:0 auto;padding:0 15px}.container::before,.container::after{display:table;content:" "}.container::after{clear:both}@media(min-width:768px){.container{width:750px}.navbar-header{float:left}.navbar-brand{float:left}}@media(min-width:992px){.container{width:970px}}@media(min-width:1200px){.container{width:1170px}}
+      .navbar-brand{font-size:20px;padding:15px;line-height:28px}.navbar-nav{display:flex;list-style:none;margin:0;padding:0}.navbar-nav>li>a{display:block;padding:15px}
       .navbar-header{float:left}.navbar-right{float:right}.navbar-collapse{clear:both}.course-name{display:block}.navbar:after{content:'';display:block;clear:both}
       @media(max-width:767px){.navbar-header,.navbar-right{float:none}}
-      </style><nav class="navbar navbar-default"><div class="navbar-header"><div class="navbar-brand"><a class="course-webclass" href="/webclass/">WebClass</a><span class="course-name">Dummy course_demo123</span></div></div>
-      <ul class="navbar-nav navbar-right"><li id="notification-dropdown-area"><a href="#messages">通知</a></li><li><a href="#language">言語</a></li></ul><div class="navbar-collapse"><ul class="navbar-nav"><li><a href="#materials">教材</a></li></ul></div></nav><main><h1>Dummy materials</h1></main></html>`;
+      </style><nav class="navbar navbar-default"><div class="container"><div class="navbar-header"><div class="navbar-brand"><a class="course-webclass" href="/webclass/">WebClass</a><span class="course-name">Dummy course_demo123</span></div></div>
+      <ul class="navbar-nav navbar-right"><li id="notification-dropdown-area"><a href="#messages">通知</a></li><li><a href="#language">言語</a></li><li><a href="#account">アカウント</a></li></ul></div><div class="container"><div class="navbar-collapse"><ul class="navbar-nav"><li><a href="#materials">教材</a></li></ul></div></div></nav><main><h1>Dummy materials</h1></main></html>`;
     await context.route('http://fixture.test/**', route => route.fulfill({ contentType: 'text/html', body: markup }));
     await page.addInitScript(() => {
       const listeners = [], values = JSON.parse(sessionStorage.themeValues || '{}');
@@ -67,6 +67,18 @@ try {
       await page.locator('.course-name').evaluate(el => { el.textContent = '検証用の長い講義名称（金1・金2、担当教員、2026年度後期前半）_demo123'; });
       await page.evaluate(() => { WebClassCourseUI.update(); WebClassCourseUI.update(); });
       await assertCopyPosition();
+      if (width >= 768) {
+        const home = await page.locator('.course-webclass').boundingBox();
+        const utilities = await page.locator('.navbar>.container:first-child>.navbar-right').boundingBox();
+        const titleRow = await page.locator('.wcl-course-title-row').boundingBox();
+        const header = await page.locator('.navbar>.container:first-child').boundingBox();
+        assert.ok(Math.abs(utilities.y - home.y) < 2, 'utility controls remain in the first row alongside WebClass');
+        assert.ok(titleRow.y >= utilities.y + utilities.height - 1, 'title/copy row stays below utility controls');
+        assert.ok(titleRow.x + titleRow.width <= header.x + header.width + 1, 'title/copy row stays inside the banner');
+        assert.ok(utilities.x >= home.x + home.width, 'utility controls do not overlap the WebClass link');
+        assert.ok(header.height <= 120, 'long names do not create an extra utility row');
+        await page.screenshot({ path: resolve(output, `${native}-long-${width}.png`) });
+      }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'long course title does not overflow the viewport');
     }
     await page.setViewportSize({ width: 1280, height: 800 });

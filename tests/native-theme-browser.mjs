@@ -21,7 +21,7 @@ try {
     const markup = `<!doctype html><html lang="ja" data-wcl-course-ui><meta charset="utf-8"><style>
       body{margin:0;font:16px sans-serif;color:#333}.navbar{min-height:50px;box-sizing:border-box}.container{box-sizing:border-box;margin:0 auto;padding:0 15px}.container::before,.container::after{display:table;content:" "}.container::after{clear:both}@media(min-width:768px){.container{width:750px}.navbar-header{float:left}.navbar-brand{float:left}}@media(min-width:992px){.container{width:970px}}@media(min-width:1200px){.container{width:1170px}}
       .navbar-brand{font-size:20px;padding:15px;line-height:28px}.navbar-nav{display:flex;list-style:none;margin:0;padding:0}.navbar-nav>li>a{display:block;padding:15px}
-      .navbar-header{float:left}.navbar-right{float:right}.navbar-collapse{clear:both}.course-name{display:block}.navbar:after{content:'';display:block;clear:both}
+      .navbar-header{float:left}.navbar-right{float:right}.navbar-right>li:last-child>a{box-sizing:border-box;height:76px}.navbar-collapse{clear:both}.course-name{display:block}.navbar:after{content:'';display:block;clear:both}
       @media(max-width:767px){.navbar-header,.navbar-right{float:none}}
       </style><nav class="navbar navbar-default"><div class="container"><div class="navbar-header"><div class="navbar-brand"><a class="course-webclass" href="/webclass/">WebClass</a><span class="course-name">Dummy course_demo123</span></div></div>
       <ul class="navbar-nav navbar-right"><li id="notification-dropdown-area"><a href="#messages">通知</a></li><li><a href="#language">言語</a></li><li><a href="#account">アカウント</a></li></ul></div><div class="container"><div class="navbar-collapse"><ul class="navbar-nav"><li><a href="#materials">教材</a></li></ul></div></div></nav><main><h1>Dummy materials</h1></main></html>`;
@@ -73,7 +73,8 @@ try {
         const titleRow = await page.locator('.wcl-course-title-row').boundingBox();
         const header = await page.locator('.navbar>.container:first-child').boundingBox();
         assert.ok(Math.abs(utilities.y - home.y) < 2, 'utility controls remain in the first row alongside WebClass');
-        assert.ok(titleRow.y >= utilities.y + utilities.height - 1, 'title/copy row stays below utility controls');
+        assert.ok(Math.abs(titleRow.y - header.y - 50) < 1, 'course title starts 50px below the header top, independent of avatar height');
+        assert.ok(titleRow.x + titleRow.width <= utilities.x + 1, 'title/copy row does not overlap tall account controls');
         assert.ok(titleRow.x + titleRow.width <= header.x + header.width + 1, 'title/copy row stays inside the banner');
         assert.ok(utilities.x >= home.x + home.width, 'utility controls do not overlap the WebClass link');
         assert.ok(header.height <= 120, 'long names do not create an extra utility row');

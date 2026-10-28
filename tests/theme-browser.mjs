@@ -151,7 +151,12 @@ try {
     assert.deepEqual(await home.evaluate(()=>[window.fixtureSaves,window.fixtureEnds]),before.map(n=>n+1),'native action handlers remain intact');
     await home.mouse.move(0,0);
   };
-  await assertNativeColors('initial default');
+  for (const page of [home,course,material,library,popup]) await page.waitForFunction(()=>document.documentElement.dataset.wclTheme==='silver');
+  assert.equal(await home.locator('.wcl-theme-toggle').innerText(), 'テーマ');
+  await worker.evaluate(()=>chrome.storage.local.set({pageTheme:'default'}));
+  for (const page of [home,course,material,library,popup]) await page.waitForFunction(()=>document.documentElement.dataset.wclTheme==='default');
+  await intro.locator('html[data-wcl-theme="default"]').waitFor({state:'attached'});
+  await assertNativeColors('explicit default');
   await assertAnswerActions();
   assert.deepEqual(await home.locator('.wcl-theme-menu [data-theme]').evaluateAll(options=>options.map(el=>[el.dataset.theme,el.textContent.replace('✓','').trim()])),[
     ['default','デフォルト'],['charcoal','ブラック'],['forest','グリーン'],['red','レッド'],['lightblue','ライトブルー'],['silver','シルバー'],['gold','ゴールド']

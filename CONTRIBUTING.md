@@ -57,6 +57,7 @@ npm install --no-save --package-lock=false playwright
 npx playwright install chromium
 node tests/browser-check.mjs
 node tests/theme-browser.mjs
+node tests/native-theme-browser.mjs
 node tests/banner-browser.mjs
 node tests/home-ui-browser.mjs
 node tests/onboarding-browser.mjs
@@ -103,3 +104,5 @@ npm run check:distribution
 バージョン定義と利用者向け文書の不一致、古いハッシュ、ハッシュ一覧からの追跡ファイルの欠落がある場合はCIが失敗します。ルートのMarkdown文書とハッシュ一覧自身はハッシュ対象外です。
 
 `wordmark-navigation-browser.mjs` は、ダミーのヘッダーでホーム自身への再遷移を抑え、コース追加・その他のページからのマウス／キーボードによるホーム復帰、リンク先とアクセシビリティ属性の保持、ヘッダー再利用を確認します。実際の大学ページや認証情報は使いません。
+
+`native-theme-browser.mjs` は、ダミーの青・グレーのWebClassヘッダーで全7テーマの文字色、初回シルバー、保存済みデフォルトの維持、「テーマ」ラベルの表示、狭い画面とキーボード操作を検証します。

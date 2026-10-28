@@ -24,6 +24,7 @@
     if (bannerImage) root.style.setProperty('--wcl-banner-image', `url("${bannerImage}")`);
     else root.style.removeProperty('--wcl-banner-image');
     bannerControls(bannerImage ? 'バナー画像を設定しています。' : 'テーマとは別に保存されます。');
+    schedule();
   }
   async function bannerData(file) {
     if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('PNG・JPEG・WebPの画像を選択してください。');
@@ -63,7 +64,7 @@
     }
   }
   const accountSelector = '.navbar a[title="アカウントメニュー"]';
-  let current = themes[0], observer, queued = false, dayTimer, selected = false, controlId = 0;
+  let current = themes.find(theme => theme.id === globalThis.WebClassTheme.defaultId), observer, queued = false, dayTimer, selected = false, controlId = 0;
   const controls = new Set();
   const wordmarkStates = new WeakMap();
   const libraryButtons = new WeakSet();
@@ -196,6 +197,7 @@
       control.querySelector('.wcl-theme-toggle').title = `テーマ: ${current.label}`;
       for (const option of control.querySelectorAll('[data-theme]')) option.setAttribute('aria-checked', String(option.dataset.theme === current.id));
     }
+    schedule();
   }
   function closeThemes(except) {
     for (const control of controls) {
@@ -221,7 +223,8 @@
     for (const [cx,cy] of [[7,10],[10,6.8],[14.5,7],[17.5,10.5]]) {
       const dot = document.createElementNS(icon.namespaceURI,'circle'); dot.setAttribute('cx',cx); dot.setAttribute('cy',cy); dot.setAttribute('r','1'); icon.append(dot);
     }
-    toggle.append(icon);
+    const toggleLabel = document.createElement('span'); toggleLabel.textContent = 'テーマ';
+    toggle.append(icon, toggleLabel);
     const menu = document.createElement('div'); menu.className = 'wcl-theme-menu'; menu.hidden = true;
     menu.id = `wcl-theme-menu-${++controlId}`; menu.setAttribute('role','menu'); menu.setAttribute('aria-label','テーマ'); toggle.setAttribute('aria-controls',menu.id);
     for (const theme of themes) {
@@ -290,6 +293,12 @@
   }
   function header() {
     for (const nav of document.querySelectorAll('.navbar')) {
+      // Native blue and gray headers have different text colors. In "default",
+      // use the native brand's color rather than assuming a white foreground.
+      if (current.id === 'default') {
+        const native = nav.querySelector('.navbar-brand') || nav.querySelector('.navbar-nav>li>a');
+        if (native) nav.style.setProperty('--wcl-native-header-text', getComputedStyle(native).color);
+      }
       let button = nav.querySelector('.wcl-library-button');
       if (!button) {
         const collapse = nav.querySelector('.navbar-collapse'), notification = nav.querySelector('#notification-dropdown-area');
@@ -431,7 +440,7 @@
   globalThis.WebClassPageUI = Object.freeze({ update });
   let cached; try { cached = localStorage.getItem(cacheKey); } catch {}
   applyTheme(cached);
-  chrome.storage.local.get({ [themeKey]:themes[0].id, [bannerKey]:'', publicReleaseCheck: {}, dismissedUpdateVersion: '' }).then(data => {
+  chrome.storage.local.get({ [themeKey]:globalThis.WebClassTheme.defaultId, [bannerKey]:'', publicReleaseCheck: {}, dismissedUpdateVersion: '' }).then(data => {
     if (!selected) applyTheme(data[themeKey]);
     if (!bannerTouched) applyBanner(data[bannerKey]);
     if (!releaseTouched) release = data.publicReleaseCheck || {};

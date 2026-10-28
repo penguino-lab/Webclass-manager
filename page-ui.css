@@ -118,12 +118,12 @@ form:has(#ContentInfo) .wcl-intro-actions :is(input,button){display:inline-flex!
 .navbar .dropdown-menu{width:max-content;min-width:200px;max-width:min(520px,calc(100vw - 32px))}
 .navbar .dropdown-menu>li>a{display:block;box-sizing:border-box;min-height:44px;padding:11px 24px!important;line-height:22px;white-space:normal;word-break:normal;overflow-wrap:break-word}
 .navbar .wcl-theme-control{position:relative;display:block;float:left}
-.navbar .wcl-library-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:3px 0;padding:8px 14px;border:1px solid currentColor;border-radius:4px;background:transparent;color:var(--wcl-text,#fff);font:500 14px/20px system-ui;cursor:pointer;white-space:nowrap}
+.navbar .wcl-library-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:3px 0;padding:8px 14px;border:1px solid currentColor;border-radius:4px;background:transparent;color:var(--wcl-text,var(--wcl-native-header-text,inherit));font:500 14px/20px system-ui;cursor:pointer;white-space:nowrap}
 .navbar .wcl-library-button:hover{background:#ffffff24}
 .navbar .wcl-library-button:focus-visible{outline:3px solid #b7791f;outline-offset:2px}
 .navbar .wcl-library-button:disabled{opacity:.65;cursor:wait}
-.wcl-theme-toggle{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:50px;padding:0;border:0;background:transparent;color:var(--wcl-text,#f4f6f8);cursor:pointer}
-.wcl-theme-toggle svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+.wcl-theme-toggle{display:flex;align-items:center;justify-content:center;box-sizing:border-box;gap:6px;min-width:88px;height:50px;padding:0 10px;border:0;background:transparent;color:var(--wcl-text,var(--wcl-native-header-text,inherit));font:500 14px/20px system-ui;white-space:nowrap;cursor:pointer}
+.wcl-theme-toggle svg{flex-shrink:0;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
 .wcl-theme-toggle:hover,.wcl-theme-toggle[aria-expanded="true"]{background:#ffffff24}
 .wcl-theme-toggle:focus-visible{outline:3px solid #b7791f;outline-offset:-3px}
 .wcl-theme-menu{position:absolute;top:100%;right:0;z-index:1100;box-sizing:border-box;width:252px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 96px);overflow-y:auto;overscroll-behavior:contain;padding:6px;background:#fff;border:1px solid #cbd5df;border-radius:10px;box-shadow:0 10px 30px #1626382e;color:#243545}

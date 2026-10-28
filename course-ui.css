@@ -1,9 +1,9 @@
 /* Registered at document_start so the native layout is never painted first. */
 @scope (html[data-wcl-course-ui]) {
-  a.course-webclass{display:flex!important;width:max-content;align-items:center;min-height:44px;padding:0 24px!important;margin-left:-24px;margin-bottom:6px;border:0;border-radius:0;font-size:18px!important;font-weight:400;color:var(--wcl-text,#fff)!important;background:transparent;text-decoration:underline}
+  a.course-webclass{display:flex!important;width:max-content;align-items:center;min-height:44px;padding:0 24px!important;margin-left:-24px;margin-bottom:6px;border:0;border-radius:0;font-size:18px!important;font-weight:400;color:var(--wcl-text,var(--wcl-native-header-text,inherit))!important;background:transparent;text-decoration:underline}
   a.course-webclass .glyphicon-home{display:none!important}
   .wcl-course-home-label{display:inline-block;transform:translateY(4px);pointer-events:none}
-  .navbar-header:has(.course-name){max-width:calc(100% - 264px)}
+  .navbar-header:has(.course-name){max-width:calc(100% - 308px)}
   .navbar-brand:has(.course-name){max-width:100%;white-space:normal;height:auto!important}
   @media(min-width:768px){.navbar-brand:has(.course-name){margin-left:0!important;padding-left:0!important}}
   a.course-webclass:hover{opacity:.85}

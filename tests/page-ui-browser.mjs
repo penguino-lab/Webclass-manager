@@ -135,8 +135,8 @@ export async function checkPageUI(context, site, artifacts, worker) {
     await setDay('2026-10-18T03:00:00Z');
     assert.equal(await page.locator('.wcl-today-heading,.wcl-today-cell,.wcl-today-badge').count(), 0, 'no wrong weekday is highlighted on Sunday');
     await worker.evaluate(()=>chrome.storage.local.set({pageTheme:'retired-theme'}));
-    await page.waitForFunction(()=>document.documentElement.dataset.wclTheme==='default');
-    assert.equal(await page.locator('[data-theme="default"]').getAttribute('aria-checked'), 'true', 'removed theme IDs fall back to the default');
+    await page.waitForFunction(()=>document.documentElement.dataset.wclTheme==='silver');
+    assert.equal(await page.locator('[data-theme="silver"]').getAttribute('aria-checked'), 'true', 'removed theme IDs fall back to silver');
     await page.goto(new URL('/outside', site).href);
     await page.setContent('<nav class="navbar navbar-default"><a title="アカウントメニュー"><span>検証用ユーザー</span></a></nav>');
     assert.equal(await filter(page.locator('span')), 'none', 'same-origin pages outside the WebClass path remain unchanged');

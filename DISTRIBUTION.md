@@ -4,9 +4,10 @@
 
 ## 現在の公開版
 
-- 確認日：2026年10月28日（日本時間）
-- バージョン：**1.0.2**
-- 修正前の基準コミット：`eb0dcc6972bc98232555f8181750be3b659d5de7`（1.0.1）。この版の内容は同梱ハッシュ一覧で照合します。
+- 確認日：2026年11月13日（日本時間）
+- バージョン：**1.0.3**
+- 修正前の基準コミット：`d2311ae74725f39115bb6cfb5edb74b16537eb54`（1.0.2）。この版の内容は同梱ハッシュ一覧で照合します。
+- 配布用ZIPを GitHub Releases の添付ファイルに切り替え、バージョンごとのダウンロード回数を確認できるようにしました。
 - 講義名の行をヘッダー上端から50pxの位置に固定し、背の高いアカウント表示で下へ押されないようにしました。
 - 授業ヘッダーの上段にWebClassリンクとテーマ・通知・アカウントを固定し、講義名とコピー操作をその下の左側に配置します。長い講義名によるツール群の下段への押し出しを防ぎます。
 - 「講義コードをコピー」を講義名の右隣に戻し、長い講義名でもコピー操作だけが下の行へ落ちないようにしました。
@@ -29,7 +30,7 @@
 
 [CODE_HASHES.sha256](CODE_HASHES.sha256) はこの配布版に含まれる追跡ファイルのSHA-256一覧です。ルートのMarkdown説明書・作業指示のAGENTS.md・ハッシュ一覧自身は対象外です。第三者ライブラリの説明書は含みます。
 
-ハッシュはGitに記録されたバイト列を基準とします。GitHubのmainのZIPを展開したファイルで照合できます。WindowsでGitの改行変換を有効にした場合はGit上の内容で比較してください。
+ハッシュはGitに記録されたバイト列を基準とします。GitHub Releasesの配布用ZIPを展開したファイルで照合できます。WindowsでGitの改行変換を有効にした場合はGit上の内容で比較してください。
 
 ```sh
 sha256sum -c CODE_HASHES.sha256
@@ -39,5 +40,15 @@ sha256sum -c CODE_HASHES.sha256
 
 - Node.jsの自動テストと、一時プロファイル・ダミー資料を使うブラウザーテストを利用します。手順は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 - フォルダー選択はテスト用ハンドルで検証します。OSの実フォルダーピッカー・大学の認証・ネイティブな権限承認は利用者の環境で確認してください。
-- ダウンロード先は [mainのZIP](https://github.com/penguino-lab/Webclass-manager/archive/refs/heads/main.zip) です。既存の拡張を削除せず同じフォルダーを更新し、再読み込みしてください。手順は [README](README.md) にあります。
+- ダウンロード先は [最新版の配布ZIP](https://github.com/penguino-lab/Webclass-manager/releases/latest/download/Webclass-manager.zip) です。既存の拡張を削除せず同じフォルダーを更新し、再読み込みしてください。手順は [README](README.md) にあります。
 - 独自部分のライセンスは未設定です。第三者ライブラリのライセンスは同梱のまま保持しています。
+
+## 配布用ZIPの公開
+
+CI通過後にPRをmainへマージし、公開するコミットにバージョンタグを付けます。タグから次のコマンドでZIPを作成し、同じタグの GitHub Release に添付して公開します。ファイル名は各リリースで `Webclass-manager.zip` に統一します。
+
+```sh
+git archive --format=zip --prefix=Webclass-manager/ --output=Webclass-manager.zip v1.0.3
+```
+
+`v1.0.3` は公開するバージョンのタグに置き換えます。[GitHub Releases API](https://api.github.com/repos/penguino-lab/Webclass-manager/releases) の `assets` から `Webclass-manager.zip` の `download_count` を取得できます。

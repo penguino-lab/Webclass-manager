@@ -1,8 +1,8 @@
 # Webclass manager
 
-WebClassの画面を使いやすくし、講義資料のダウンロード・講義別の整理・保存後の検索をまとめて支援するブラウザ拡張機能です。現在のバージョンは **1.0.2** です。
+WebClassの画面を使いやすくし、講義資料のダウンロード・講義別の整理・保存後の検索をまとめて支援するブラウザ拡張機能です。現在のバージョンは **1.0.3** です。
 
-**[最新版をダウンロード（ZIP）](https://github.com/penguino-lab/Webclass-manager/archive/refs/heads/main.zip)** · [インストール](#インストール) · [初期設定](#初期設定) · [更新方法](#更新方法) · [詳しい使い方](FEATURES.md)
+**[最新版をダウンロード（ZIP）](https://github.com/penguino-lab/Webclass-manager/releases/latest/download/Webclass-manager.zip)** · [インストール](#インストール) · [初期設定](#初期設定) · [更新方法](#更新方法) · [詳しい使い方](FEATURES.md)
 
 | 使いたいこと | できること |
 | --- | --- |
@@ -15,20 +15,20 @@ WebClassの提供元・各大学による公式製品ではありません。大
 
 ## ダウンロード
 
-利用するだけなら、**[配布用リポジトリのmainのZIP](https://github.com/penguino-lab/Webclass-manager/archive/refs/heads/main.zip)** を取得してください。GitHubアカウント、Git、Node.js、ビルド作業は不要です。
+利用するだけなら、**[最新版の配布ZIP](https://github.com/penguino-lab/Webclass-manager/releases/latest/download/Webclass-manager.zip)** を取得してください。GitHubアカウント、Git、Node.js、ビルド作業は不要です。
 
-GitHubの画面から取得する場合は、[配布用リポジトリ](https://github.com/penguino-lab/Webclass-manager)で **main → Code → Download ZIP** を選びます。ZIPはダウンロード時点のmainの内容です。ブラウザの拡張機能ストアからの自動更新には対応していません。
+GitHubの画面から取得する場合は、[最新リリース](https://github.com/penguino-lab/Webclass-manager/releases/latest) の **Assets → Webclass-manager.zip** を選びます。ブラウザの拡張機能ストアからの自動更新には対応していません。
 
 ## インストール
 
 対応環境は **PC版Chrome 133以降**です。Edgeは同等のChromium機能を備えたバージョンが対象です。ブラウザの補助テストはChromiumを使います。
 
-1. [最新版のZIP](https://github.com/penguino-lab/Webclass-manager/archive/refs/heads/main.zip)をダウンロードし、右クリックの **すべて展開** などで展開します。ZIPのままでは読み込めません。
+1. [最新版のZIP](https://github.com/penguino-lab/Webclass-manager/releases/latest/download/Webclass-manager.zip)をダウンロードし、右クリックの **すべて展開** などで展開します。ZIPのままでは読み込めません。
 2. 展開したフォルダーを、今後も残す場所へ移動します。例：`ドキュメント/Webclass-manager`。読み込み後もフォルダーを削除・移動しないでください。
 3. Chromeなら `chrome://extensions`、Edgeなら `edge://extensions` をアドレスバーに入力します。
 4. **デベロッパーモード**をONにし、**パッケージ化されていない拡張機能を読み込む** を選びます。Edgeでは **展開して読み込み** と表示される場合があります。
 5. 展開先の **`manifest.json` が直接入っているフォルダー**を選びます。二重にフォルダーができた場合は内側を選んでください。
-6. 拡張機能一覧で **Webclass manager / 1.0.2** と表示されることを確認します。
+6. 拡張機能一覧で **Webclass manager / 1.0.3** と表示されることを確認します。
 7. ブラウザの拡張メニューから「Web+」アイコンを固定すると、次の設定が行いやすくなります。
 
 学校・組織の管理設定でデベロッパーモードや拡張機能の追加が禁止されている場合、この手順では導入できません。
@@ -90,7 +90,7 @@ WebClass内の **ライブラリを開く**、またはツールバーの **Web+
 
 ZIPから導入した拡張のため、バナーから更新手順を確認し、次の操作で更新してください。拡張のファイルを自動で書き換える機能はありません。
 
-1. [最新のmainのZIP](https://github.com/penguino-lab/Webclass-manager/archive/refs/heads/main.zip)を取得し、現在の拡張フォルダーとは別の場所に展開します。
+1. [最新版の配布ZIP](https://github.com/penguino-lab/Webclass-manager/releases/latest/download/Webclass-manager.zip)を取得し、現在の拡張フォルダーとは別の場所に展開します。
 2. 現在の拡張フォルダーをバックアップします。保存済みの講義資料は拡張フォルダーの外に置いてください。
 3. 読み込み済みの拡張フォルダーと同じ場所に、新版の `manifest.json` と同梱ファイル・サブフォルダーをまとめて上書きします。新しいフォルダーが内側に入る形にならないようにしてください。
 4. `chrome://extensions` または `edge://extensions` で対象拡張の **再読み込み** を押し、バージョンを確認します。

@@ -48,7 +48,7 @@ sha256sum -c CODE_HASHES.sha256
 CI通過後にPRをmainへマージし、公開するコミットにバージョンタグを付けます。タグから次のコマンドでZIPを作成し、同じタグの GitHub Release に添付して公開します。ファイル名は各リリースで `Webclass-manager.zip` に統一します。
 
 ```sh
-git archive --format=zip --prefix=Webclass-manager/ --output=Webclass-manager.zip v1.0.3
+git -c core.autocrlf=false -c core.eol=lf archive --format=zip --prefix=Webclass-manager/ --output=Webclass-manager.zip v1.0.3
 ```
 
 `v1.0.3` は公開するバージョンのタグに置き換えます。[GitHub Releases API](https://api.github.com/repos/penguino-lab/Webclass-manager/releases) の `assets` から `Webclass-manager.zip` の `download_count` を取得できます。

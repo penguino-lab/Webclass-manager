@@ -12,9 +12,10 @@ test('bulk save compares bytes, keeps distinct same-name files, and retries afte
     parseFromString() { return { querySelectorAll: () => [] }; }
   };
   globalThis.fetch = async url => {
-    const body = payloads.get(url);
-    assert.ok(body, `unexpected fetch: ${url}`);
-    return { ok: true, url, headers: new Headers({ 'content-type': 'application/pdf' }), blob: async () => new Blob([body]) };
+    const payload = payloads.get(url);
+    assert.ok(payload, `unexpected fetch: ${url}`);
+    const { body, type = 'application/pdf' } = typeof payload === 'string' ? { body: payload } : payload;
+    return { ok: true, url, headers: new Headers({ 'content-type': type }), blob: async () => new Blob([body]) };
   };
   globalThis.chrome = {
     runtime: { id: 'test', onMessage: { addListener: fn => { listener = fn; } },
@@ -50,6 +51,18 @@ test('bulk save compares bytes, keeps distinct same-name files, and retries afte
     assert.equal(retried.saved, 1, 'failed save does not hide a usable identical copy');
     assert.equal(retried.failed, 1);
     assert.equal(retried.skipped, 0);
+    const png = 'https://school.test/webclass/text/26/math/mock/figure.png';
+    const jpeg = 'https://school.test/webclass/show_image.php?c=x&t=y';
+    const html = 'https://school.test/webclass/text/26/math/mock/not-image.png';
+    payloads = new Map([[png, { body: 'png bytes', type: 'image/png' }], [jpeg, { body: 'jpeg bytes', type: 'image/jpeg' }], [html, { body: 'text', type: 'text/plain' }]]);
+    const images = await run([
+      { url: png, kind: 'image', name: '教材_第1節 図.png' },
+      { url: jpeg, kind: 'image', name: '教材_第2節 図.png' },
+      { url: html, kind: 'image', name: '教材_第3節 図.png' }
+    ]);
+    assert.equal(images.saved, 2);
+    assert.equal(images.failed, 1, 'a non-image response is not saved as an image');
+    assert.deepEqual(downloads, ['数学/教材_第1節 図.png', '数学/教材_第2節 図.jpg']);
   } finally {
     t.mock.timers.tick(120000);
     t.mock.timers.reset();

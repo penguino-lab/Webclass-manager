@@ -104,12 +104,12 @@
     // The worker derives the material URLs from Chrome's verified sender.
     let resources;
     try {
-      resources = await WebClassMaterialUI.collectChapterPDFs((current, total) => {
+      resources = await (WebClassMaterialUI.collectChapterResources || WebClassMaterialUI.collectChapterPDFs)((current, total) => {
         notice(`教材の資料を確認中… ${current}/${total}`, { persistent: true });
       });
     } catch (error) {
       resources = Array.isArray(error.resources) ? error.resources : [];
-      notice(error.message || 'PDFを確認できないため、添付資料のみ保存します。', { persistent: true });
+      notice(error.message || 'PDF・画像を確認できないため、添付資料のみ保存します。', { persistent: true });
     }
     const result = await send({ type: 'bulk-download', context, resources });
     if (!result?.ok) {

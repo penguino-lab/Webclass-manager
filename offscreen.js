@@ -143,6 +143,13 @@ async function bulkPerform(job) {
     try {
       const response = await responseFor(resource.url, job.site), mime = response.headers.get('content-type') || '';
       if (/text\/html/i.test(mime)) throw fail('資料ではなくHTMLが返されました。');
+      if (resource.kind === 'image') {
+        const type = mime.split(';', 1)[0].trim().toLowerCase();
+        if (!/^image\/(?:png|jpeg|gif|webp|avif|bmp)$/.test(type)) throw fail('画像ではない応答が返されました。');
+        // The page URL may not reveal the format, so the response type decides it.
+        const extension = type === 'image/jpeg' ? '.jpg' : '.' + type.slice(6);
+        resource.name = resource.name.replace(/(\.(?:png|jpe?g|gif|webp|avif|bmp))?$/i, extension);
+      }
       const blob = await response.blob();
       const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()))]
         .map(value => value.toString(16).padStart(2, '0')).join('');

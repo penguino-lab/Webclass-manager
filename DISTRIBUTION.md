@@ -4,9 +4,10 @@
 
 ## 現在の公開版
 
-- 確認日：2026年11月13日（日本時間）
-- バージョン：**1.0.3**
-- 修正前の基準コミット：`d2311ae74725f39115bb6cfb5edb74b16537eb54`（1.0.2）。この版の内容は同梱ハッシュ一覧で照合します。
+- 確認日：2026年11月26日（日本時間）
+- バージョン：**1.0.4**
+- 修正前の基準コミット：`a6f108154ef662380e4c21418d29ea0bf8147110`（1.0.3）。この版の内容は同梱ハッシュ一覧で照合します。
+- 一括ダウンロードで、章の本文にPDFではなく画像として載っている資料も元の解像度で保存します。
 - 配布用ZIPを GitHub Releases の添付ファイルに切り替え、バージョンごとのダウンロード回数を確認できるようにしました。
 - 講義名の行をヘッダー上端から50pxの位置に固定し、背の高いアカウント表示で下へ押されないようにしました。
 - 授業ヘッダーの上段にWebClassリンクとテーマ・通知・アカウントを固定し、講義名とコピー操作をその下の左側に配置します。長い講義名によるツール群の下段への押し出しを防ぎます。
@@ -48,7 +49,7 @@ sha256sum -c CODE_HASHES.sha256
 CI通過後にPRをmainへマージし、公開するコミットにバージョンタグを付けます。タグから次のコマンドでZIPを作成し、同じタグの GitHub Release に添付して公開します。ファイル名は各リリースで `Webclass-manager.zip` に統一します。
 
 ```sh
-git -c core.autocrlf=false -c core.eol=lf archive --format=zip --prefix=Webclass-manager/ --output=Webclass-manager.zip v1.0.3
+git -c core.autocrlf=false -c core.eol=lf archive --format=zip --prefix=Webclass-manager/ --output=Webclass-manager.zip v1.0.4
 ```
 
-`v1.0.3` は公開するバージョンのタグに置き換えます。[GitHub Releases API](https://api.github.com/repos/penguino-lab/Webclass-manager/releases) の `assets` から `Webclass-manager.zip` の `download_count` を取得できます。
+`v1.0.4` は公開するバージョンのタグに置き換えます。[GitHub Releases API](https://api.github.com/repos/penguino-lab/Webclass-manager/releases) の `assets` から `Webclass-manager.zip` の `download_count` を取得できます。

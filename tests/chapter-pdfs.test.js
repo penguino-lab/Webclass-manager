@@ -4,13 +4,14 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 const source = readFileSync(new URL('../material-ui.js', import.meta.url), 'utf8');
 
-function fixture({ stuck = false, empty = [], samePDF = false, loading = false } = {}) {
+function fixture({ stuck = false, empty = [], samePDF = false, loading = false, images = {} } = {}) {
   let selected = 0, clock = 0;
   const clicks = [];
   const viewer = { frames: [], document: {} };
   const top = { frames: [viewer], document: { URL: 'https://school.test/webclass/txtbk_frame.php?set_contents_id=one' } };
   const setViewer = index => { viewer.document = {
     readyState: loading ? 'loading' : 'complete',
+    querySelectorAll: selector => selector === 'img' ? (images[index] || []).map(src => typeof src === 'string' ? { getAttribute: () => src } : src) : [],
     URL: empty.includes(index) ? 'https://school.test/webclass/txtbk_show_text.php?chapter=' + index :
       'https://school.test/webclass/loadit.php?action=pdfViewer&file=' + encodeURIComponent(`/webclass/text/26/course/mock/chapter${samePDF ? 0 : index}.pdf`)
   }; };
@@ -24,7 +25,7 @@ function fixture({ stuck = false, empty = [], samePDF = false, loading = false }
     click() { clicks.push(index); selected = index; if (!stuck) setViewer(index); }
   }));
   const sandbox = {
-    URL, location: { origin: 'https://school.test' }, window: { top },
+    URL, atob, location: { origin: 'https://school.test' }, window: { top },
     document: { querySelectorAll: () => controls, querySelector: () => ({ textContent: '教材' }) },
     Date: { now: () => clock }, setTimeout: callback => { clock += 150; callback(); }
   };
@@ -70,4 +71,19 @@ test('newly loaded chapters may display the same PDF URL', async () => {
 test('a loading document is not mistaken for a chapter without a PDF', async () => {
   const { collect } = fixture({ loading: true, empty: [0] });
   await assert.rejects(collect(), /章の読み込みを確認できません/);
+});
+
+test('image chapters save each figure and its original format', async () => {
+  const shown = 'show_image.php?c=L3Zhci93d3cvd2ViY2xhc3MvdGV4dC8yNi9jb3Vyc2Uv&t=' + encodeURIComponent(btoa('abc/figure.jpeg'));
+  const icon = { getAttribute: () => '/webclass/images/attach.png', naturalWidth: 15, naturalHeight: 15 };
+  const { collect } = fixture({ empty: [0, 1, 2], images: {
+    1: ['/webclass/text/26/course/abc/one.png', 'https://other.test/remote.png', 'data:image/png;base64,AAAA', icon],
+    2: [shown, '/webclass/text/26/course/abc/two.gif', shown]
+  } });
+  const resources = Array.from(await collect(), ({ kind, url, name }) => ({ kind, path: new URL(url).pathname, name }));
+  assert.deepEqual(resources, [
+    { kind: 'image', path: '/webclass/text/26/course/abc/one.png', name: '教材_第1章.png' },
+    { kind: 'image', path: '/webclass/show_image.php', name: '教材_第2章_1.jpg' },
+    { kind: 'image', path: '/webclass/text/26/course/abc/two.gif', name: '教材_第2章_2.gif' }
+  ]);
 });

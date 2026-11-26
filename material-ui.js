@@ -144,8 +144,34 @@
       (document.body || document.documentElement).append(hint);
     }
   }
+  const imageExtensions = /\.(?:png|jpe?g|gif|webp|avif|bmp)$/i;
+  function imageName(url) {
+    // show_image.php style URLs carry the stored file path in base64 parameters.
+    const candidates = [url.pathname];
+    for (const key of ['t', 'file']) {
+      const value = url.searchParams.get(key);
+      if (!value) continue;
+      candidates.push(value);
+      try { candidates.push(atob(value)); } catch {}
+    }
+    const match = candidates.map(value => String(value).split(/[?#]/, 1)[0].match(imageExtensions)).find(Boolean);
+    return match ? match[0].toLowerCase().replace('.jpeg', '.jpg') : '';
+  }
+  function chapterImages(doc, page) {
+    const found = [];
+    for (const img of doc.querySelectorAll?.('img') || []) {
+      // Chapter text images are the original files scaled down by attributes.
+      const value = img.currentSrc || img.getAttribute('src');
+      // Skip icons; chapter figures are far larger than WebClass's 32px icons.
+      if (!value || (img.naturalWidth && img.naturalWidth <= 32 && img.naturalHeight <= 32)) continue;
+      let url; try { url = new URL(value, page); } catch { continue; }
+      if (url.origin !== page.origin || !/^https?:$/.test(url.protocol)) continue;
+      found.push({ url: url.href, extension: imageName(url) });
+    }
+    return found;
+  }
   function materialSnapshot() {
-    const found = [], documents = [];
+    const found = [], images = [], documents = [];
     let ready = true;
     const visit = win => {
       try {
@@ -159,12 +185,13 @@
             const url = new URL(file, page);
             if (url.origin === page.origin && url.pathname.toLowerCase().endsWith('.pdf')) found.push(url.href);
           }
-        }
+        } else images.push(...chapterImages(doc, page));
         for (let i = 0; i < win.frames.length; i++) visit(win.frames[i]);
       } catch { ready = false; /* Do not reuse a PDF while a frame is navigating. */ }
     };
     visit(window.top.frames.webclass_content || window.top);
-    return { urls: [...new Set(found)], documents, ready };
+    const seen = new Set();
+    return { urls: [...new Set(found)], images: images.filter(item => !seen.has(item.url) && seen.add(item.url)), documents, ready };
   }
   async function collectChapterPDFs(report = () => {}) {
     const controls = [...document.querySelectorAll('#TOCLayout input[name="clickpage"],#TOCLayout button[name="clickpage"]')].filter(el => !el.disabled);
@@ -178,26 +205,31 @@
         const current = row.matches('.bkkhaki,.active,[aria-current="true"]');
         const previous = materialSnapshot();
         if (!current) { control.click(); changed = true; }
-        let urls = [], stable = null, stableSince = 0, loaded = false;
+        let urls = [], images = [], stable = null, stableSince = 0, loaded = false;
         const deadline = Date.now() + 10000;
         while (Date.now() < deadline) {
           await new Promise(resolve => setTimeout(resolve, 150));
-          const next = materialSnapshot(), key = next.urls.join('|');
+          const next = materialSnapshot(), key = [...next.urls, ...next.images.map(item => item.url)].join('|');
           const navigated = next.documents.some(doc => !previous.documents.includes(doc));
           if (next.ready && (current || navigated)) {
             if (key !== stable) { stable = key; stableSince = Date.now(); }
-            if (Date.now() - stableSince >= 450) { urls = next.urls; loaded = true; break; }
+            if (Date.now() - stableSince >= 450) { urls = next.urls; images = next.images; loaded = true; break; }
           } else { stable = null; stableSince = 0; }
         }
         // A loaded chapter may contain attachments or HTML and no PDF at all.
         if (!loaded) {
-          const error = Error('章の読み込みを確認できませんでした。確認済みのPDFと添付資料を保存します。');
+          const error = Error('章の読み込みを確認できませんでした。確認済みのPDF・画像と添付資料を保存します。');
           error.resources = resources;
           throw error;
         }
         const material = clean(document.querySelector('#WsTitle h2')?.textContent) || '教材';
         const section = [clean(row.querySelector('.wcl-section')?.textContent), clean(row.querySelector('.wcl-title-button')?.textContent)].filter(Boolean).join(' ');
-        for (const url of urls) resources.push({ kind: 'pdf', url, name: [material, section].filter(Boolean).join('_') + '.pdf' });
+        const base = [material, section].filter(Boolean).join('_');
+        for (const url of urls) resources.push({ kind: 'pdf', url, name: base + '.pdf' });
+        for (const [number, image] of images.entries()) {
+          const suffix = images.length > 1 ? `_${number + 1}` : '';
+          resources.push({ kind: 'image', url: image.url, name: base + suffix + (image.extension || '.png') });
+        }
       }
       return resources;
     } finally {
@@ -205,6 +237,7 @@
     }
   }
   globalThis.WebClassMaterialUI = {
+    collectChapterResources: collectChapterPDFs,
     collectChapterPDFs,
     update() {
       const relevant = document.querySelector('#TOCLayout, #ContentQuitMenu input[name="quit_contents"], #downloadButton');

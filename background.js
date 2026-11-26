@@ -195,6 +195,17 @@ async function startSave(message, sender, s) {
   } });
   return response?.accepted ? { ok: true, jobId: id } : { ok: false };
 }
+function resourceCourse(url) {
+  const direct = courseId(url.href);
+  if (direct) return direct;
+  // show_image.php passes the stored directory as base64 in c (or file).
+  const paths = ['c', 'file'].flatMap(key => {
+    const value = url.searchParams.get(key);
+    try { return value ? [atob(value)] : []; } catch { return []; }
+  });
+  const ids = [...new Set(paths.map(path => courseId('/' + path.replace(/^\/+/, ''), url.href)).filter(Boolean))];
+  return ids.length === 1 ? ids[0] : '';
+}
 async function startBulk(message, sender, s) {
   const course = await resolveCourse(message.context || {}, sender);
   if (!course) return { ok: false, error: '講義名を認識できませんでした。講義ページを再読み込みしてください。' };
@@ -212,9 +223,16 @@ async function startBulk(message, sender, s) {
   const resources = Array.isArray(message.resources) ? message.resources.slice(0, 500).flatMap(item => {
     try {
       const url = new URL(item.url);
-      if (item.kind !== 'pdf' || !inSite(url.href, s.site) || !url.pathname.toLowerCase().endsWith('.pdf') ||
-          !course.id || courseId(url.href) !== course.id) return [];
-      return [{ kind: 'pdf', url: url.href, name: String(item.name || '教材.pdf').slice(0, 300) }];
+      if (!inSite(url.href, s.site) || !course.id) return [];
+      if (item.kind === 'pdf') {
+        if (!url.pathname.toLowerCase().endsWith('.pdf') || courseId(url.href) !== course.id) return [];
+        return [{ kind: 'pdf', url: url.href, name: String(item.name || '教材.pdf').slice(0, 300) }];
+      }
+      // Chapter images must belong to this course; site icons have no course path.
+      if (item.kind === 'image' && resourceCourse(url) === course.id) {
+        return [{ kind: 'image', url: url.href, name: String(item.name || '教材.png').slice(0, 300) }];
+      }
+      return [];
     } catch { return []; }
   }) : [];
   const id = crypto.randomUUID(); await offscreen();

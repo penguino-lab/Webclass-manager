@@ -233,6 +233,17 @@ test('bulk downloads are scoped to the active material using Chrome-provided fra
   assert.equal(session.runtimeMessage.job.materialId, 'math1');
   assert.deepEqual(session.runtimeMessage.job.resources.map(item => item.name), ['第1章.pdf']);
   assert.deepEqual(session.runtimeMessage.job.materials.map(item => item.url), [chapter, top]);
+  const encoded = value => encodeURIComponent(Buffer.from(value).toString('base64'));
+  const shown = `https://example.edu/webclass/show_image.php?c=${encoded('/var/www/webclass/text/26/26math/')}&t=${encoded('mock/figure.png')}`;
+  const images = [
+    { kind: 'image', url: 'https://example.edu/webclass/text/26/26math/mock/figure.png', name: '図1.png' },
+    { kind: 'image', url: shown, name: '図2.png' },
+    { kind: 'image', url: shown.replace(encoded('/var/www/webclass/text/26/26math/'), encoded('/var/www/webclass/text/26/other/')), name: '別講義.png' },
+    { kind: 'image', url: 'https://example.edu/webclass/images/icon.png', name: 'アイコン.png' },
+    { kind: 'image', url: 'https://outside.test/webclass/text/26/26math/mock/figure.png', name: '外部.png' }
+  ];
+  assert.equal((await call({ type: 'bulk-download', context, resources: images }, from)).ok, true);
+  assert.deepEqual(session.runtimeMessage.job.resources.map(item => [item.kind, item.name]), [['image', '図1.png'], ['image', '図2.png']]);
   await call({ type: 'bulk-download', context }, { ...from, tab: { id: 1, url: top.replace('math1', 'other') } });
   assert.deepEqual(session.runtimeMessage.job.materials.map(item => item.url), [chapter]);
   assert.equal((await call({ type: 'bulk-download', context }, { ...from, url: 'https://example.edu/webclass/course.php/26math/' })).ok, false);
